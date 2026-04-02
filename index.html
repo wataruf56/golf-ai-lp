@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ゴルフのあいちゃん — 撮って送るだけ。PGA基準のAIがあなたのスイングを採点。</title>
+<title>ゴルフのあいちゃん — 撮って送るだけ。AIコーチがあなたのスイングを解析。</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -377,7 +377,7 @@ section { padding: 120px 0; }
 .feature-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 10px; }
 .feature-card p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7; font-weight: 300; }
 
-/* ─── Score Demo ─── */
+/* ─── Analysis Demo ─── */
 .score-section { text-align: center; }
 .score-demo {
   max-width: 600px;
@@ -387,47 +387,6 @@ section { padding: 120px 0; }
   border-radius: 24px;
   padding: 40px;
   text-align: left;
-}
-.score-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 32px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--border);
-}
-.score-total {
-  font-family: var(--serif);
-  font-size: 3.5rem;
-  font-weight: 700;
-  color: var(--accent);
-  line-height: 1;
-}
-.score-total small { font-size: 1.2rem; color: var(--text-muted); font-weight: 400; }
-.score-label { font-size: 0.8rem; color: var(--text-secondary); }
-.score-bars { display: flex; flex-direction: column; gap: 14px; }
-.score-bar-row {
-  display: grid;
-  grid-template-columns: 100px 1fr 40px;
-  align-items: center;
-  gap: 12px;
-}
-.score-bar-label { font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; }
-.score-bar-track {
-  height: 6px;
-  background: rgba(74, 230, 138, 0.08);
-  border-radius: 3px;
-  overflow: hidden;
-}
-.score-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
-  border-radius: 3px;
-  transition: width 1.5s ease;
-}
-.score-bar-value {
-  font-family: var(--mono);
-  font-size: 0.75rem;
-  color: var(--accent);
-  text-align: right;
 }
 
 /* ─── Pricing ─── */
@@ -598,7 +557,7 @@ footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
 <nav id="nav">
   <div class="container">
     <div class="logo">ゴルフの<span>あいちゃん</span></div>
-    <a href="#cta" class="nav-cta">自分のスイング、何点か見てみる →</a>
+    <a href="#cta" class="nav-cta">AIコーチに診てもらう →</a>
   </div>
 </nav>
 
@@ -607,17 +566,17 @@ footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
   <div class="container">
     <div class="hero-inner">
       <div>
-        <div class="hero-badge">PGA基準のAI解析 × LINE完結</div>
+        <div class="hero-badge">AIコーチ × LINE完結</div>
         <h1>撮って、送る。<br>たった10秒で、<br><em>あなた専属のプロコーチ。</em></h1>
         <p class="hero-sub">
           アプリ不要。LINEで動画を送るだけで、<br>
-          PGA基準のAIがあなたのスイングを7つの視点で採点。<br>
+          AIコーチがあなたのスイングを7つの視点で診断。<br>
           "次に何を直すべきか"が、すぐに届きます。
         </p>
         <div class="hero-cta-group">
           <a href="#cta" class="btn-primary">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
-            自分のスイング、何点か見てみる
+            AIコーチに診てもらう
           </a>
           <a href="#how" class="btn-ghost">どんな仕組み？ ↓</a>
         </div>
@@ -670,7 +629,7 @@ footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
         <div class="step-number">03</div>
         <div class="step-icon">🎯</div>
         <h3>数秒後、プロの目が届く</h3>
-        <p>PGA基準で7フェーズを採点。改善すべきTOP3、最優先の1つ、おすすめ練習法まで。「次の1球で何を意識するか」が明確になります。</p>
+        <p>7フェーズを具体的に診断。良い点・改善点・最優先で直す1つ・おすすめ練習法まで。「次の1球で何を意識するか」が明確になります。</p>
       </div>
     </div>
   </div>
@@ -690,8 +649,8 @@ footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
       </div>
       <div class="feature-card reveal">
         <span class="feature-emoji">🧠</span>
-        <h3>スイングを7つに分解して、全部採点</h3>
-        <p>アドレス、テイクバック、トップ、切り返し、インパクト、フォロー、フィニッシュ。PGAプロ基準で各10点満点。お世辞なしの採点だから、本当の実力が見えます。</p>
+        <h3>スイングを7つに分解して、全部診る</h3>
+        <p>アドレス、テイクバック、トップ、切り返し、インパクト、フォロー、フィニッシュ。各フェーズの良い点・直すべき点を具体的な文章で伝えるから、本当の実力が見えます。</p>
       </div>
       <div class="feature-card reveal">
         <span class="feature-emoji">📊</span>
@@ -712,59 +671,31 @@ footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
   </div>
 </section>
 
-<!-- Score Demo -->
+<!-- Analysis Demo -->
 <section class="score-section">
   <div class="container">
     <div class="section-label reveal">AI Analysis</div>
-    <h2 class="section-title reveal">あなたのスイング、<br>今、何点ですか？</h2>
-    <p class="section-desc reveal" style="margin: 0 auto;">LINEに届くレポートの実例です。ここまで詳しく、ここまで具体的。</p>
+    <h2 class="section-title reveal">LINEに届くレポート、<br>ここまで具体的。</h2>
+    <p class="section-desc reveal" style="margin: 0 auto;">実際にAIコーチが返すフィードバックの例です。</p>
     <div class="score-demo reveal">
-      <div class="score-header">
-        <div>
-          <div class="score-label">総合スコア</div>
-          <div class="score-total">72<small>/100</small></div>
+      <div style="font-size: 0.85rem; line-height: 1.9; color: var(--text-primary);">
+        <div style="margin-bottom: 16px;">
+          <strong>💬 総合コメント</strong><br>
+          アドレスの安定感がとても良いですね！ここは自信を持ってください。一番の課題は切り返しのタイミング。上半身主導になっているので、下半身リードを意識するだけで飛距離がグッと伸びます。
         </div>
-        <div style="text-align: right;">
-          <div class="score-label">判定</div>
-          <div style="font-size: 1.5rem;">🌟</div>
-          <div style="font-size: 0.75rem; color: var(--accent); margin-top: 4px;">良い</div>
+        <div style="border-top: 1px solid var(--border); margin: 16px 0; padding-top: 16px;">
+          <strong>📊 フェーズ別評価（一部抜粋）</strong><br><br>
+          <span style="color: var(--accent);">切り返し：</span><br>
+          → 良い点：トップからの切り返し自体はスムーズで、急激な力みがない<br>
+          → 直した方がいい点：上半身から動き始めている。左足の踏み込みを先に行うことで、タメが生まれ飛距離アップにつながる
         </div>
-      </div>
-      <div class="score-bars">
-        <div class="score-bar-row">
-          <span class="score-bar-label">アドレス</span>
-          <div class="score-bar-track"><div class="score-bar-fill" data-width="80" style="width: 0%;"></div></div>
-          <span class="score-bar-value">8/10</span>
+        <div style="border-top: 1px solid var(--border); margin: 16px 0; padding-top: 16px;">
+          <strong>🎯 最優先で直す1つ</strong><br>
+          「切り返しで左足を先に踏み込む」を直そう！ここを変えるだけでヘッドスピードが劇的に上がる。
         </div>
-        <div class="score-bar-row">
-          <span class="score-bar-label">テイクバック</span>
-          <div class="score-bar-track"><div class="score-bar-fill" data-width="70" style="width: 0%;"></div></div>
-          <span class="score-bar-value">7/10</span>
-        </div>
-        <div class="score-bar-row">
-          <span class="score-bar-label">トップ</span>
-          <div class="score-bar-track"><div class="score-bar-fill" data-width="70" style="width: 0%;"></div></div>
-          <span class="score-bar-value">7/10</span>
-        </div>
-        <div class="score-bar-row">
-          <span class="score-bar-label">切り返し</span>
-          <div class="score-bar-track"><div class="score-bar-fill" data-width="60" style="width: 0%;"></div></div>
-          <span class="score-bar-value">6/10</span>
-        </div>
-        <div class="score-bar-row">
-          <span class="score-bar-label">インパクト</span>
-          <div class="score-bar-track"><div class="score-bar-fill" data-width="70" style="width: 0%;"></div></div>
-          <span class="score-bar-value">7/10</span>
-        </div>
-        <div class="score-bar-row">
-          <span class="score-bar-label">フォロー</span>
-          <div class="score-bar-track"><div class="score-bar-fill" data-width="80" style="width: 0%;"></div></div>
-          <span class="score-bar-value">8/10</span>
-        </div>
-        <div class="score-bar-row">
-          <span class="score-bar-label">フィニッシュ</span>
-          <div class="score-bar-track"><div class="score-bar-fill" data-width="70" style="width: 0%;"></div></div>
-          <span class="score-bar-value">7/10</span>
+        <div style="border-top: 1px solid var(--border); margin: 16px 0; padding-top: 16px;">
+          <strong>🏋️ おすすめ練習</strong><br>
+          ステップドリル：トップで一度左足を浮かせてから踏み込んで打つ。10球×3セット。
         </div>
       </div>
     </div>
@@ -776,7 +707,7 @@ footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
   <div class="container" style="text-align: center;">
     <div class="section-label reveal">Pricing</div>
     <h2 class="section-title reveal">レッスン1回分の値段で、<br>1ヶ月ずっとコーチがつく。</h2>
-    <p class="section-desc reveal" style="margin: 0 auto;">しかも初回は無料。まず1回試して、「これは使える」と思ったら続けてください。</p>
+    <p class="section-desc reveal" style="margin: 0 auto;">無料プランは毎月使えます。まず試して、「これは使える」と思ったら続けてください。</p>
     <div class="pricing-grid" style="display: flex; gap: 24px; justify-content: center; flex-wrap: wrap;">
       <div class="price-card reveal" style="max-width: 360px; flex: 1;">
         <div class="price-plan">FREE</div>
@@ -785,7 +716,7 @@ footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
         <ul class="price-features">
           <li>毎月1回のAI解析</li>
           <li>全4モード利用可能</li>
-          <li>7フェーズの採点レポート</li>
+          <li>7フェーズの詳細レポート</li>
           <li>LINE完結（アプリ不要）</li>
         </ul>
         <a href="#cta" class="btn-price">無料で始める</a>
@@ -798,7 +729,7 @@ footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
         <ul class="price-features">
           <li>月10回のAI解析</li>
           <li>全4モード利用可能</li>
-          <li>7フェーズの採点レポート</li>
+          <li>7フェーズの詳細レポート</li>
           <li>プロとの比較解析</li>
           <li>過去の自分との比較</li>
           <li>動画＋質問で自由に相談</li>
@@ -857,11 +788,11 @@ footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
 <section class="final-cta" id="cta">
   <div class="container">
     <div class="section-label reveal">Get Started</div>
-    <h2 class="section-title reveal">あなたのスイング、<br>何点か知りたくないですか？</h2>
-    <p class="section-desc reveal">友だち追加して動画を送るだけ。初回は無料です。<br>アプリ不要、いつものLINEで、今すぐ始められます。</p>
+    <h2 class="section-title reveal">あなたのスイング、<br>AIコーチに診てもらいませんか？</h2>
+    <p class="section-desc reveal">友だち追加して動画を送るだけ。毎月1回は無料です。<br>アプリ不要、いつものLINEで、今すぐ始められます。</p>
     <a href="#" class="btn-primary reveal" style="font-size: 1.05rem; padding: 18px 44px;">
       <svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px;"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
-      無料で自分のスコアを見てみる
+      無料でAIコーチに診てもらう
     </a>
   </div>
 </section>
@@ -893,19 +824,6 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.15 });
 reveals.forEach(el => observer.observe(el));
 
-// Score bar animation
-const scoreObserver = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.querySelectorAll('.score-bar-fill').forEach(bar => {
-        bar.style.width = bar.dataset.width + '%';
-      });
-      scoreObserver.unobserve(entry.target);
-    }
-  });
-}, { threshold: 0.3 });
-const scoreDemo = document.querySelector('.score-demo');
-if (scoreDemo) scoreObserver.observe(scoreDemo);
 </script>
 </body>
 </html>
