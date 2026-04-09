@@ -1,555 +1,603 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ゴルフのあいちゃん — 撮って送るだけ。AIコーチがあなたのスイングを解析。</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ゴルフのあいちゃん — 撮って送るだけ。AIコーチがあなたのスイングを解析。</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-:root {
-  --bg-primary: #0a0f0d;
-  --bg-card: #111916;
-  --bg-card-hover: #162019;
-  --accent: #4ae68a;
-  --accent-dim: #2a8a52;
-  --accent-glow: rgba(74, 230, 138, 0.15);
-  --gold: #d4a843;
-  --gold-dim: rgba(212, 168, 67, 0.2);
-  --text-primary: #e8ede9;
-  --text-secondary: #8a9b8f;
-  --text-muted: #566b5c;
-  --border: rgba(74, 230, 138, 0.08);
-  --border-strong: rgba(74, 230, 138, 0.2);
-  --serif: 'Cormorant Garamond', 'Georgia', serif;
-  --sans: 'Noto Sans JP', -apple-system, sans-serif;
-  --mono: 'DM Mono', monospace;
-}
+        :root {
+      --bg-primary: #faf7f2;
+      --bg-card: #ffffff;
+      --bg-card-hover: #f5f0eb;
+      --accent: #4a7c59;
+      --accent-dim: #2d4a3e;
+      --accent-glow: rgba(74, 124, 89, 0.15);
+      --gold: #8b6914;
+      --gold-dim: rgba(139, 105, 20, 0.15);
+      --text-primary: #2c2c2c;
+      --text-secondary: #666666;
+      --text-muted: #999999;
+      --border: rgba(200, 190, 180, 0.3);
+      --border-strong: rgba(150, 130, 120, 0.4);
+      --serif: 'Playfair Display', 'Georgia', serif;
+      --sans: 'Zen Maru Gothic', -apple-system, sans-serif;
+      --mono: 'DM Mono', monospace;
+    }
 
-html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; }
 
-body {
-  font-family: var(--sans);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-}
+    body {
+      font-family: var(--sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
 
-/* ─── Grain Overlay ─── */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 9999;
-}
+    /* ─── Grain Overlay ─── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
 
-/* ─── Layout ─── */
-.container { max-width: 1140px; margin: 0 auto; padding: 0 24px; }
+    /* ─── Layout ─── */
+    .container { max-width: 1140px; margin: 0 auto; padding: 0 24px; }
 
-/* ─── Navigation ─── */
-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  padding: 20px 0;
-  background: rgba(10, 15, 13, 0.85);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-  transition: padding 0.3s;
-}
-nav.scrolled { padding: 12px 0; }
-nav .container { display: flex; align-items: center; justify-content: space-between; }
-.logo {
-  font-family: var(--serif);
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--text-primary);
-}
-.logo span { color: var(--accent); }
-.nav-cta {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 10px 24px;
-  background: var(--accent);
-  color: var(--bg-primary);
-  font-weight: 700;
-  font-size: 0.85rem;
-  border-radius: 100px;
-  text-decoration: none;
-  letter-spacing: 0.04em;
-  transition: all 0.3s;
-}
-.nav-cta:hover { background: #5ef09a; transform: translateY(-1px); box-shadow: 0 8px 30px var(--accent-glow); }
+    /* ─── Navigation ─── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 20px 0;
+      background: rgba(250,247,242,0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      transition: padding 0.3s;
+    }
+    nav.scrolled { padding: 12px 0; }
+    nav .container { display: flex; align-items: center; justify-content: space-between; }
 
-/* ─── Hero ─── */
-.hero {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  position: relative;
-  padding-top: 100px;
-}
-.hero::before {
-  content: '';
-  position: absolute;
-  top: -20%; right: -10%;
-  width: 700px; height: 700px;
-  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
-  pointer-events: none;
-}
-.hero::after {
-  content: '';
-  position: absolute;
-  bottom: -10%; left: -15%;
-  width: 500px; height: 500px;
-  background: radial-gradient(circle, var(--gold-dim) 0%, transparent 70%);
-  pointer-events: none;
-}
-.hero-inner {
-  position: relative; z-index: 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 80px;
-  align-items: center;
-}
-.hero-badge {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 6px 16px;
-  border: 1px solid var(--border-strong);
-  border-radius: 100px;
-  font-family: var(--mono);
-  font-size: 0.75rem;
-  color: var(--accent);
-  margin-bottom: 28px;
-  background: rgba(74, 230, 138, 0.04);
-}
-.hero-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .logo { font-family: var(--serif); font-size: 1.5rem; font-weight: 700; letter-spacing: 0.02em; color: var(--text-primary); }
+    .logo span { color: var(--accent); }
 
-.hero h1 {
-  font-family: var(--serif);
-  font-size: clamp(2.8rem, 5vw, 4.2rem);
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  margin-bottom: 24px;
-}
-.hero h1 em {
-  font-style: italic;
-  color: var(--accent);
-  position: relative;
-}
-.hero h1 em::after {
-  content: '';
-  position: absolute;
-  bottom: 2px; left: 0; right: 0;
-  height: 2px;
-  background: var(--accent);
-  opacity: 0.3;
-}
-.hero-sub {
-  font-size: 1.05rem;
-  line-height: 1.9;
-  color: var(--text-secondary);
-  margin-bottom: 40px;
-  font-weight: 300;
-}
-.hero-cta-group { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-.btn-primary {
-  display: inline-flex; align-items: center; gap: 10px;
-  padding: 16px 36px;
-  background: var(--accent);
-  color: var(--bg-primary);
-  font-weight: 700;
-  font-size: 0.95rem;
-  border-radius: 100px;
-  text-decoration: none;
-  letter-spacing: 0.02em;
-  transition: all 0.3s;
-  border: none; cursor: pointer;
-}
-.btn-primary:hover { background: #5ef09a; transform: translateY(-2px); box-shadow: 0 12px 40px var(--accent-glow); }
-.btn-primary svg { width: 18px; height: 18px; }
-.btn-ghost {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 16px 28px;
-  background: transparent;
-  color: var(--text-secondary);
-  font-weight: 500;
-  font-size: 0.9rem;
-  border: 1px solid var(--border-strong);
-  border-radius: 100px;
-  text-decoration: none;
-  transition: all 0.3s;
-}
-.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .nav-cta {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 24px; background: var(--accent); color: var(--bg-primary);
+      font-weight: 700; font-size: 0.85rem; border-radius: 100px;
+      text-decoration: none; letter-spacing: 0.04em; transition: all 0.3s;
+    }
+    .nav-cta:hover { background: #5ef09a; transform: translateY(-1px); box-shadow: 0 8px 30px var(--accent-glow); }
 
-/* Hero Phone Mockup */
-.hero-visual {
-  position: relative;
-  display: flex;
-  justify-content: center;
-}
-.phone-frame {
-  width: 280px;
-  background: #1a221e;
-  border-radius: 36px;
-  padding: 12px;
-  border: 1px solid var(--border-strong);
-  box-shadow:
-    0 40px 80px rgba(0,0,0,0.5),
-    0 0 0 1px rgba(74, 230, 138, 0.05),
-    inset 0 1px 0 rgba(255,255,255,0.03);
-  position: relative;
-}
-.phone-screen {
-  background: #0d1411;
-  border-radius: 26px;
-  overflow: hidden;
-  aspect-ratio: 9/19;
-  display: flex;
-  flex-direction: column;
-}
-.phone-header {
-  padding: 16px 16px 12px;
-  background: linear-gradient(180deg, #162019 0%, #0d1411 100%);
-  text-align: center;
-}
-.phone-header-icon {
-  width: 40px; height: 40px;
-  background: var(--accent);
-  border-radius: 12px;
-  margin: 0 auto 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.2rem;
-}
-.phone-header-title { font-size: 0.7rem; font-weight: 700; color: var(--text-primary); }
-.phone-header-sub { font-size: 0.55rem; color: var(--text-muted); margin-top: 2px; }
-.phone-chat {
-  flex: 1;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  overflow: hidden;
-}
-.chat-bubble {
-  padding: 10px 14px;
-  border-radius: 16px;
-  font-size: 0.6rem;
-  line-height: 1.6;
-  max-width: 85%;
-  animation: fadeUp 0.6s ease both;
-}
-.chat-bubble.user {
-  align-self: flex-end;
-  background: var(--accent);
-  color: var(--bg-primary);
-  border-bottom-right-radius: 4px;
-  font-weight: 500;
-}
-.chat-bubble.ai {
-  align-self: flex-start;
-  background: var(--bg-card);
-  color: var(--text-primary);
-  border-bottom-left-radius: 4px;
-  border: 1px solid var(--border);
-}
-.chat-bubble:nth-child(1) { animation-delay: 0.2s; }
-.chat-bubble:nth-child(2) { animation-delay: 0.8s; }
-.chat-bubble:nth-child(3) { animation-delay: 1.4s; }
-.chat-bubble:nth-child(4) { animation-delay: 2.0s; }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    /* ─── Hero ─── */
+    .hero {
+      background: linear-gradient(135deg, rgba(250,247,242,0.3) 0%, rgba(250,247,242,0.1) 100%), url("https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=1200&q=80") center/cover;
+    : 100vh; display: flex; align-items: center;
+      position: relative; padding-top: 100px;
+    }
+    .hero::before {
+      content: ''; position: absolute; top: -20%; right: -10%;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero::after {
+      content: ''; position: absolute; bottom: -10%; left: -15%;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, var(--gold-dim) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-inner {
+      position: relative; z-index: 1;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 16px; border: 1px solid var(--border-strong); border-radius: 100px;
+      font-family: var(--mono); font-size: 0.75rem; color: var(--accent);
+      margin-bottom: 28px; background: rgba(74, 230, 138, 0.04);
+    }
+    .hero-badge::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent); animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-.phone-glow {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 350px; height: 350px;
-  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: -1;
-}
+    .hero h1 {
+      font-family: var(--serif);
+      font-size: clamp(2.8rem, 5vw, 4.2rem);
+      font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 24px;
+    }
+    .hero h1 em { font-style: italic; color: var(--accent); position: relative; }
+    .hero h1 em::after {
+      content: ''; position: absolute; bottom: 2px; left: 0; right: 0;
+      height: 2px; background: var(--accent); opacity: 0.3;
+    }
+    .hero-sub { font-size: 1.05rem; line-height: 1.9; color: var(--text-secondary); margin-bottom: 40px; font-weight: 300; }
+    .hero-cta-group { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
 
-/* ─── Section Common ─── */
-section { padding: 120px 0; }
-.section-label {
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 16px;
-}
-.section-title {
-  font-family: var(--serif);
-  font-size: clamp(2rem, 3.5vw, 3rem);
-  font-weight: 700;
-  line-height: 1.2;
-  margin-bottom: 20px;
-}
-.section-desc {
-  font-size: 1rem;
-  color: var(--text-secondary);
-  line-height: 1.8;
-  max-width: 560px;
-  font-weight: 300;
-}
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 16px 36px; background: var(--accent); color: var(--bg-primary);
+      font-weight: 700; font-size: 0.95rem; border-radius: 100px;
+      text-decoration: none; letter-spacing: 0.02em; transition: all 0.3s;
+      border: none; cursor: pointer;
+    }
+    .btn-primary:hover { background: #5ef09a; transform: translateY(-2px); box-shadow: 0 12px 40px var(--accent-glow); }
+    .btn-primary svg { width: 18px; height: 18px; }
 
-/* ─── How it Works ─── */
-.steps-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-top: 64px;
-}
-.step-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 40px 32px;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.4s;
-}
-.step-card:hover {
-  border-color: var(--border-strong);
-  background: var(--bg-card-hover);
-  transform: translateY(-4px);
-}
-.step-number {
-  font-family: var(--serif);
-  font-size: 4rem;
-  font-weight: 700;
-  color: var(--accent);
-  opacity: 0.12;
-  position: absolute;
-  top: 16px; right: 24px;
-  line-height: 1;
-}
-.step-icon {
-  width: 48px; height: 48px;
-  background: rgba(74, 230, 138, 0.08);
-  border: 1px solid var(--border-strong);
-  border-radius: 14px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.3rem;
-  margin-bottom: 24px;
-}
-.step-card h3 {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin-bottom: 12px;
-}
-.step-card p {
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-  line-height: 1.7;
-  font-weight: 300;
-}
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 16px 28px; background: transparent; color: var(--text-secondary);
+      font-weight: 500; font-size: 0.9rem; border: 1px solid var(--border-strong);
+      border-radius: 100px; text-decoration: none; transition: all 0.3s;
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
 
-/* ─── Features ─── */
-.features-section { background: linear-gradient(180deg, var(--bg-primary) 0%, #0e1512 50%, var(--bg-primary) 100%); }
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  margin-top: 64px;
-}
-.feature-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 36px 32px;
-  transition: all 0.4s;
-  position: relative;
-}
-.feature-card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
-.feature-card.highlight {
-  grid-column: span 2;
-  background: linear-gradient(135deg, var(--bg-card) 0%, rgba(74, 230, 138, 0.03) 100%);
-  border-color: var(--border-strong);
-}
-.feature-emoji { font-size: 1.6rem; margin-bottom: 16px; display: block; }
-.feature-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 10px; }
-.feature-card p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7; font-weight: 300; }
+    /* ─── Hero Phone Mockup (LINE風に差し替え) ─── */
+    .hero-visual { position: relative; display: flex; justify-content: center; }
+    .phone-frame {
+      width: 280px; background: #1a221e; border-radius: 36px; padding: 12px;
+      border: 1px solid var(--border-strong);
+      box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(74, 230, 138, 0.05), inset 0 1px 0 rgba(255,255,255,0.03);
+      position: relative;
+    }
+    .phone-screen {
+      background: #0d1411; border-radius: 26px; overflow: hidden;
+      aspect-ratio: 9/19; display: flex; flex-direction: column;
+    }
+    .phone-glow {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 350px; height: 350px;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      pointer-events: none; z-index: -1;
+    }
 
-/* ─── Analysis Demo ─── */
-.score-section { text-align: center; }
-.score-demo {
-  max-width: 600px;
-  margin: 64px auto 0;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 40px;
-  text-align: left;
-}
+    /* LINE Header in Hero phone */
+    .hero-line-header {
+      background: #075E54;
+      padding: 10px 10px 8px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .hero-line-header .hlh-back { color: #fff; font-size: 16px; }
+    .hero-line-header .hlh-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, #4ae68a, #2d8a2d);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+    .hero-line-header .hlh-name { color: #fff; font-weight: 700; font-size: 0.65rem; }
+    .hero-line-header .hlh-sub { color: rgba(255,255,255,0.6); font-size: 0.5rem; }
 
-/* ─── Pricing ─── */
-.pricing-grid {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
-  max-width: 800px;
-  margin: 64px auto 0;
-}
-.price-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 40px 36px;
-  position: relative;
-  transition: all 0.4s;
-}
-.price-card:hover { border-color: var(--border-strong); transform: translateY(-3px); }
-.price-card.recommended {
-  border-color: var(--accent);
-  background: linear-gradient(180deg, rgba(74, 230, 138, 0.04) 0%, var(--bg-card) 100%);
-}
-.price-badge {
-  position: absolute;
-  top: -12px; right: 24px;
-  background: var(--accent);
-  color: var(--bg-primary);
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 4px 14px;
-  border-radius: 100px;
-  letter-spacing: 0.06em;
-}
-.price-plan {
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  color: var(--accent);
-  margin-bottom: 12px;
-}
-.price-amount {
-  font-family: var(--serif);
-  font-size: 2.8rem;
-  font-weight: 700;
-  line-height: 1;
-  margin-bottom: 6px;
-}
-.price-amount small { font-size: 1rem; font-weight: 400; color: var(--text-muted); }
-.price-desc { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 28px; font-weight: 300; }
-.price-features { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
-.price-features li {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  padding-left: 24px;
-  position: relative;
-  font-weight: 300;
-}
-.price-features li::before {
-  content: '✓';
-  position: absolute;
-  left: 0;
-  color: var(--accent);
-  font-weight: 700;
-  font-size: 0.8rem;
-}
-.btn-price {
-  display: block;
-  width: 100%;
-  padding: 14px;
-  text-align: center;
-  border-radius: 100px;
-  font-weight: 700;
-  font-size: 0.85rem;
-  text-decoration: none;
-  transition: all 0.3s;
-  letter-spacing: 0.02em;
-}
-.btn-price.primary { background: var(--accent); color: var(--bg-primary); border: none; cursor: pointer; }
-.btn-price.primary:hover { background: #5ef09a; transform: translateY(-1px); }
-.btn-price.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-strong); }
-.btn-price.secondary:hover { border-color: var(--accent); color: var(--accent); }
+    /* LINE chat in Hero phone */
+    .hero-line-chat {
+      flex: 1; background: #ece5dd; padding: 8px 6px;
+      display: flex; flex-direction: column; gap: 5px; overflow: hidden;
+    }
+    .hlc-bot { display: flex; gap: 4px; align-items: flex-start; }
+    .hlc-bot .hlc-av {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: linear-gradient(135deg, #4ae68a, #2d8a2d);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; flex-shrink: 0;
+    }
+    .hlc-bot .hlc-bbl {
+      background: #fff; border-radius: 3px 10px 10px 10px;
+      padding: 6px 8px; max-width: 82%; font-size: 0.5rem;
+      line-height: 1.6; color: #333;
+    }
+    .hlc-bot .hlc-bbl strong { font-size: 0.5rem; }
+    .hlc-bot .hlc-bbl .hlc-sec { font-weight: 700; margin-top: 3px; }
+    .hlc-bot .hlc-bbl .hlc-good { color: #2e7d32; font-size: 0.45rem; }
+    .hlc-bot .hlc-bbl .hlc-bad { color: #c62828; font-size: 0.45rem; }
+    .hlc-bot .hlc-bbl .hlc-sep { border-top: 1px solid #e0e0e0; margin: 3px 0; }
 
-/* ─── Testimonials ─── */
-.testimonials-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-top: 64px;
-}
-.testimonial-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 32px;
-}
-.testimonial-stars { color: var(--gold); font-size: 0.8rem; margin-bottom: 16px; letter-spacing: 2px; }
-.testimonial-text { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.8; margin-bottom: 20px; font-weight: 300; font-style: italic; }
-.testimonial-author { display: flex; align-items: center; gap: 12px; }
-.testimonial-avatar {
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-dim), var(--accent));
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.7rem; font-weight: 700; color: var(--bg-primary);
-}
-.testimonial-name { font-size: 0.8rem; font-weight: 700; }
-.testimonial-meta { font-size: 0.7rem; color: var(--text-muted); }
+    /* Hero Rich Menu */
+    .hero-line-rmenu {
+      display: flex; border-top: 1px solid #ddd; background: #fafafa;
+    }
+    .hero-line-rmenu .hlr-item {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 5px 0; border-right: 1px solid #eee;
+    }
+    .hero-line-rmenu .hlr-item:last-child { border-right: none; }
+    .hero-line-rmenu .hlr-item .hlr-ic { font-size: 12px; }
+    .hero-line-rmenu .hlr-item .hlr-lb { font-size: 0.4rem; color: #999; margin-top: 1px; }
+    .hero-line-rmenu .hlr-item.hlr-active { background: #e8f5e9; }
+    .hero-line-rmenu .hlr-item.hlr-active .hlr-lb { color: #2e7d32; font-weight: 600; }
 
-/* ─── Final CTA ─── */
-.final-cta {
-  text-align: center;
-  padding: 120px 0 140px;
-  position: relative;
-}
-.final-cta::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 50%;
-  transform: translateX(-50%);
-  width: 800px; height: 400px;
-  background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
-  pointer-events: none;
-}
-.final-cta .section-title { margin-bottom: 16px; }
-.final-cta .section-desc { margin: 0 auto 40px; text-align: center; }
-.final-cta .btn-primary { font-size: 1.05rem; padding: 18px 44px; }
+    /* Hero chat animation */
+    .hlc-msg { animation: fadeUp 0.6s ease both; }
+    .hlc-msg:nth-child(1) { animation-delay: 0.2s; }
+    .hlc-msg:nth-child(2) { animation-delay: 0.8s; }
+    .hlc-msg:nth-child(3) { animation-delay: 1.4s; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
-/* ─── Footer ─── */
-footer {
-  border-top: 1px solid var(--border);
-  padding: 40px 0;
-  text-align: center;
-}
-footer p { font-size: 0.75rem; color: var(--text-muted); }
-footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
+    /* ─── Section Common ─── */
+    section { padding: 120px 0; }
+    .section-label {
+      font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 16px;
+    }
+    .section-title {
+      font-family: var(--serif); font-size: clamp(2rem, 3.5vw, 3rem);
+      font-weight: 700; line-height: 1.2; margin-bottom: 20px;
+    }
+    .section-desc {
+      font-size: 1rem; color: var(--text-secondary); line-height: 1.8;
+      max-width: 560px; font-weight: 300;
+    }
 
-/* ─── Responsive ─── */
-@media (max-width: 768px) {
-  .hero-inner { grid-template-columns: 1fr; gap: 48px; text-align: center; }
-  .hero-cta-group { justify-content: center; }
-  .hero-visual { order: -1; }
-  .phone-frame { width: 240px; }
-  .steps-grid { grid-template-columns: 1fr; }
-  .features-grid { grid-template-columns: 1fr; }
-  .feature-card.highlight { grid-column: span 1; }
-  .pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
-  .testimonials-grid { grid-template-columns: 1fr; }
-  section { padding: 80px 0; }
-  .nav-cta { display: none; }
-}
+    /* ─── How it Works ─── */
+    .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 64px; }
+    .step-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px;
+      padding: 40px 32px; position: relative; overflow: hidden; transition: all 0.4s;
+    }
+    .step-card:hover { border-color: var(--border-strong); background: var(--bg-card-hover); transform: translateY(-4px); }
+    .step-number {
+      font-family: var(--serif); font-size: 4rem; font-weight: 700;
+      color: var(--accent); opacity: 0.12; position: absolute; top: 16px; right: 24px; line-height: 1;
+    }
+    .step-icon {
+      width: 48px; height: 48px; background: rgba(74, 230, 138, 0.08);
+      border: 1px solid var(--border-strong); border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; margin-bottom: 24px;
+    }
+    .step-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; }
+    .step-card p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7; font-weight: 300; }
 
-/* ─── Scroll Animations ─── */
-.reveal {
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.8s ease, transform 0.8s ease;
-}
-.reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-</style>
+    /* ═══════════════════════════════════════════════════════
+     * ─── NEW: Live Demo Section ───
+     * ═══════════════════════════════════════════════════════ */
+    .demo-section { text-align: center; position: relative; }
+    .demo-section::before {
+      content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Demo Phone */
+    .demo-phone {
+      width: 340px; height: 680px; border-radius: 36px;
+      background: #000; margin: 48px auto 0;
+      box-shadow: 0 0 0 3px #333, 0 20px 60px rgba(0,0,0,0.6);
+      display: flex; flex-direction: column; overflow: hidden; position: relative;
+    }
+    .demo-sbar {
+      background: #075E54; padding: 8px 18px 0;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 11px; color: #fff; font-weight: 500; height: 30px;
+    }
+    .demo-lhdr {
+      background: #075E54; padding: 7px 12px 9px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .demo-lhdr-back { color: #fff; font-size: 18px; }
+    .demo-lhdr-av {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: linear-gradient(135deg, #4ae68a, #2d8a2d);
+      display: flex; align-items: center; justify-content: center; font-size: 15px;
+    }
+    .demo-lhdr-nm { color: #fff; font-weight: 700; font-size: 13px; }
+    .demo-lhdr-sub { color: rgba(255,255,255,0.65); font-size: 9px; }
+
+    /* Demo Chat */
+    .demo-chat {
+      flex: 1; background: #ece5dd; padding: 10px 8px;
+      overflow-y: auto; overflow-x: hidden;
+      font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    }
+    .demo-chat::-webkit-scrollbar { width: 3px; }
+    .demo-chat::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+
+    .demo-welcome {
+      display: flex; align-items: center; justify-content: center;
+      height: 100%; flex-direction: column; gap: 8px;
+    }
+    .demo-welcome-icon { font-size: 32px; }
+    .demo-welcome-txt { color: #666; font-size: 11px; text-align: center; line-height: 1.6; }
+
+    .demo-msg { margin-bottom: 7px; opacity: 0; transform: translateY(10px); transition: opacity 0.3s, transform 0.3s; }
+    .demo-msg.show { opacity: 1; transform: translateY(0); }
+
+    .demo-usr { display: flex; justify-content: flex-end; }
+    .demo-usr-bbl {
+      background: #dcf8c6; color: #1a1a1a; border-radius: 12px 4px 12px 12px;
+      padding: 8px 12px; max-width: 70%; font-size: 12px; font-weight: 500; line-height: 1.5;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+
+    .demo-bot { display: flex; gap: 5px; align-items: flex-start; }
+    .demo-bot-av {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: linear-gradient(135deg, #4ae68a, #2d8a2d);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; flex-shrink: 0;
+    }
+    .demo-bot-bbl {
+      background: #fff; border-radius: 4px 12px 12px 12px;
+      padding: 8px 10px; max-width: 80%; font-size: 11.5px;
+      line-height: 1.65; color: #333; white-space: pre-line;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+
+    /* Typing */
+    .demo-typing { display: flex; gap: 3px; padding: 3px 0; }
+    .demo-typing span {
+      width: 6px; height: 6px; border-radius: 50%; background: #999;
+      animation: demoBounce 1.2s ease-in-out infinite;
+    }
+    .demo-typing span:nth-child(2) { animation-delay: 0.15s; }
+    .demo-typing span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes demoBounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-5px); opacity: 1; }
+    }
+
+    /* Carousel */
+    .demo-carousel-label { display: flex; gap: 5px; align-items: flex-end; margin-bottom: 5px; }
+    .demo-carousel-label .demo-bot-av { width: 26px; height: 26px; font-size: 13px; }
+    .demo-carousel-label-txt { font-size: 10px; color: #999; padding-bottom: 2px; }
+    .demo-carousel {
+      display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+      padding-left: 34px; padding-right: 8px; padding-bottom: 3px;
+    }
+    .demo-card {
+      min-width: 135px; max-width: 155px; border-radius: 9px; background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;
+      display: flex; flex-direction: column; flex-shrink: 0;
+    }
+    .demo-card.demo-hl { box-shadow: 0 0 0 2px var(--demo-c), 0 3px 10px rgba(0,0,0,0.15); }
+    .demo-card-hdr-dot { padding: 10px 10px 0; display: flex; align-items: center; gap: 5px; }
+    .demo-card-hdr-dot .demo-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .demo-card-hdr-bar {
+      padding: 9px 10px; text-align: center; color: #fff; font-weight: 700; font-size: 12px;
+    }
+    .demo-card-ttl { font-weight: 700; font-size: 12px; color: #333; }
+    .demo-card-desc { padding: 5px 10px 7px; font-size: 10px; color: #888; line-height: 1.5; white-space: pre-line; flex: 1; }
+    .demo-card-btn-wrap { padding: 0 7px 7px; }
+    .demo-card-btn {
+      color: #fff; border-radius: 6px; padding: 6px 0;
+      text-align: center; font-size: 11px; font-weight: 600;
+    }
+
+    /* Video thumb */
+    .demo-vid {
+      width: 155px; height: 200px; border-radius: 9px;
+      background: linear-gradient(135deg, #1a5c1a, #2d8a2d, #1a5c1a);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .demo-vid-play {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: rgba(255,255,255,0.25); border: 2px solid rgba(255,255,255,0.4);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .demo-vid-play::after {
+      content: ''; width: 0; height: 0;
+      border: 8px solid transparent; border-left: 14px solid #fff; margin-left: 3px;
+    }
+    .demo-vid-dur { color: rgba(255,255,255,0.7); font-size: 9px; margin-top: 5px; }
+
+    /* Report formatting */
+    .demo-report .demo-sec { font-weight: 700; font-size: 11.5px; margin-top: 5px; margin-bottom: 2px; color: #1a1a1a; }
+    .demo-report .demo-sec:first-child { margin-top: 0; }
+    .demo-report .demo-sep { border-top: 1px solid #e0e0e0; margin: 5px 0; }
+    .demo-report .demo-ph { font-weight: 600; margin-top: 3px; color: #1a1a1a; font-size: 11px; }
+    .demo-report .demo-gd { color: #2e7d32; font-size: 10.5px; margin-left: 5px; line-height: 1.5; }
+    .demo-report .demo-bd { color: #c62828; font-size: 10.5px; margin-left: 5px; line-height: 1.5; }
+    .demo-report .demo-num { margin-left: 3px; font-weight: 500; font-size: 10.5px; line-height: 1.5; }
+    .demo-report .demo-term { margin-left: 5px; font-size: 9.5px; color: #555; }
+
+    /* Demo Input & Rich Menu */
+    .demo-ibar {
+      background: #f0f0f0; padding: 6px 9px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .demo-ibar-inp {
+      flex: 1; background: #fff; border-radius: 16px;
+      padding: 6px 11px; font-size: 11px; color: #999;
+    }
+    .demo-ibar-send {
+      width: 28px; height: 28px; border-radius: 50%; background: #075E54;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .demo-ibar-send svg { width: 12px; height: 12px; }
+
+    .demo-rmenu { display: flex; border-top: 1px solid #ddd; background: #fafafa; }
+    .demo-rmenu-item {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 7px 0; border-right: 1px solid #eee; cursor: pointer; transition: background 0.2s;
+    }
+    .demo-rmenu-item:last-child { border-right: none; }
+    .demo-rmenu-item.demo-rmenu-active { background: #e8f5e9; }
+    .demo-rmenu-item .demo-rmenu-ic { font-size: 16px; }
+    .demo-rmenu-item .demo-rmenu-lb { font-size: 8px; color: #999; margin-top: 1px; }
+    .demo-rmenu-item.demo-rmenu-active .demo-rmenu-lb { color: #2e7d32; font-weight: 600; }
+
+    /* Demo Controls */
+    .demo-controls { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+    .demo-btn-play {
+      background: var(--accent); color: var(--bg-primary); border: none;
+      border-radius: 100px; padding: 12px 32px;
+      font-size: 0.85rem; font-weight: 700; cursor: pointer;
+      font-family: var(--sans); transition: all 0.3s; letter-spacing: 0.02em;
+    }
+    .demo-btn-play:hover { background: #5ef09a; transform: translateY(-1px); box-shadow: 0 8px 30px var(--accent-glow); }
+    .demo-btn-play:disabled { background: var(--bg-card); color: var(--text-muted); cursor: not-allowed; }
+    .demo-btn-play.demo-pulse { animation: demoPulse 2s infinite; }
+    @keyframes demoPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(74,230,138,0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(74,230,138,0); }
+    }
+    .demo-btn-reset {
+      background: transparent; color: var(--text-muted);
+      border: 1px solid var(--border-strong); border-radius: 100px;
+      padding: 12px 24px; font-size: 0.8rem; cursor: pointer;
+      font-family: var(--sans); transition: all 0.3s;
+    }
+    .demo-btn-reset:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ─── Features ─── */
+    .features-section {
+      background: linear-gradient(180deg, #faf7f2 0%, #f5f0eb 50%, #faf7f2 100%);
+    }
+    .features-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 64px; }
+    .feature-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px;
+      padding: 36px 32px; transition: all 0.4s; position: relative;
+    }
+    .feature-card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+    .feature-card.highlight {
+      grid-column: span 2;
+      background: linear-gradient(135deg, var(--bg-card) 0%, rgba(74, 230, 138, 0.03) 100%);
+      border-color: var(--border-strong);
+    }
+    .feature-emoji { font-size: 1.6rem; margin-bottom: 16px; display: block; }
+    .feature-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 10px; }
+    .feature-card p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7; font-weight: 300; }
+
+    /* ─── Analysis Demo (LINE風に差し替え) ─── */
+    .score-section { text-align: center; }
+    .score-demo {
+      max-width: 600px; margin: 64px auto 0;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px;
+      overflow: hidden; text-align: left;
+    }
+    .score-line-header {
+      background: #075E54; padding: 10px 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .score-line-header .slh-av {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, #4ae68a, #2d8a2d);
+      display: flex; align-items: center; justify-content: center; font-size: 14px;
+    }
+    .score-line-header .slh-nm { color: #fff; font-weight: 700; font-size: 13px; }
+    .score-line-chat { padding: 16px; }
+    .score-bot-row { display: flex; gap: 8px; align-items: flex-start; }
+    .score-bot-row .sbr-av {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, #4ae68a, #2d8a2d);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .score-bot-row .sbr-bbl {
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      border-radius: 4px 16px 16px 16px;
+      padding: 16px 18px; max-width: 92%;
+      font-size: 0.85rem; line-height: 1.9; color: var(--text-primary);
+    }
+    .score-bot-row .sbr-bbl .sbr-strong { font-weight: 700; display: block; margin-bottom: 4px; }
+    .score-bot-row .sbr-bbl .sbr-divider { border-top: 1px solid var(--border); margin: 12px 0; padding-top: 12px; }
+    .score-bot-row .sbr-bbl .sbr-phase { color: var(--accent); }
+    .score-bot-row .sbr-bbl .sbr-good { color: #6fcf97; }
+    .score-bot-row .sbr-bbl .sbr-bad { color: #eb5757; }
+
+    /* ─── Pricing ─── */
+    .pricing-grid { display: flex; justify-content: center; gap: 24px; max-width: 800px; margin: 64px auto 0; }
+    .price-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px;
+      padding: 40px 36px; position: relative; transition: all 0.4s;
+    }
+    .price-card:hover { border-color: var(--border-strong); transform: translateY(-3px); }
+    .price-card.recommended {
+      border-color: var(--accent);
+      background: linear-gradient(180deg, rgba(74, 230, 138, 0.04) 0%, var(--bg-card) 100%);
+    }
+    .price-badge {
+      position: absolute; top: -12px; right: 24px;
+      background: var(--accent); color: var(--bg-primary);
+      font-size: 0.65rem; font-weight: 700; padding: 4px 14px;
+      border-radius: 100px; letter-spacing: 0.06em;
+    }
+    .price-plan { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 12px; }
+    .price-amount { font-family: var(--serif); font-size: 2.8rem; font-weight: 700; line-height: 1; margin-bottom: 6px; }
+    .price-amount small { font-size: 1rem; font-weight: 400; color: var(--text-muted); }
+    .price-desc { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 28px; font-weight: 300; }
+    .price-features { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+    .price-features li {
+      font-size: 0.85rem; color: var(--text-secondary); padding-left: 24px;
+      position: relative; font-weight: 300;
+    }
+    .price-features li::before { content: '✓'; position: absolute; left: 0; color: var(--accent); font-weight: 700; font-size: 0.8rem; }
+    .btn-price {
+      display: block; width: 100%; padding: 14px; text-align: center;
+      border-radius: 100px; font-weight: 700; font-size: 0.85rem;
+      text-decoration: none; transition: all 0.3s; letter-spacing: 0.02em;
+    }
+    .btn-price.primary { background: var(--accent); color: var(--bg-primary); border: none; cursor: pointer; }
+    .btn-price.primary:hover { background: #5ef09a; transform: translateY(-1px); }
+    .btn-price.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-strong); }
+    .btn-price.secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ─── Testimonials ─── */
+    .testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 64px; }
+    .testimonial-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 32px; }
+    .testimonial-stars { color: var(--gold); font-size: 0.8rem; margin-bottom: 16px; letter-spacing: 2px; }
+    .testimonial-text {
+      font-size: 0.88rem; color: var(--text-secondary); line-height: 1.8;
+      margin-bottom: 20px; font-weight: 300; font-style: italic;
+    }
+    .testimonial-author { display: flex; align-items: center; gap: 12px; }
+    .testimonial-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-dim), var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700; color: var(--bg-primary);
+    }
+    .testimonial-name { font-size: 0.8rem; font-weight: 700; }
+    .testimonial-meta { font-size: 0.7rem; color: var(--text-muted); }
+
+    /* ─── Final CTA ─── */
+    .final-cta { text-align: center; padding: 120px 0 140px; position: relative; }
+    .final-cta::before {
+      content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 400px;
+      background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .final-cta .section-title { margin-bottom: 16px; }
+    .final-cta .section-desc { margin: 0 auto 40px; text-align: center; }
+    .final-cta .btn-primary { font-size: 1.05rem; padding: 18px 44px; }
+
+    /* ─── Footer ─── */
+    footer { border-top: 1px solid var(--border); padding: 40px 0; text-align: center; }
+    footer p { font-size: 0.75rem; color: var(--text-muted); }
+    footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 768px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 48px; text-align: center; }
+      .hero-cta-group { justify-content: center; }
+      .hero-visual { order: -1; }
+      .phone-frame { width: 240px; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .features-grid { grid-template-columns: 1fr; }
+      .feature-card.highlight { grid-column: span 1; }
+      .pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
+      .testimonials-grid { grid-template-columns: 1fr; }
+      section { padding: 80px 0; }
+      .nav-cta { display: none; }
+      .demo-phone { width: 300px; height: 600px; }
+    }
+
+    /* ─── Scroll Animations ─── */
+    .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease, transform 0.8s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    nav { background: rgba(250,247,242,0.95); }
+    body::before { opacity: 0; }
+  </style>
 </head>
 <body>
 
@@ -561,7 +609,7 @@ footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
   </div>
 </nav>
 
-<!-- Hero -->
+<!-- Hero (スマホモックアップをLINE風に差し替え) -->
 <section class="hero">
   <div class="container">
     <div class="hero-inner">
@@ -585,19 +633,38 @@ footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
         <div class="phone-glow"></div>
         <div class="phone-frame">
           <div class="phone-screen">
-            <div class="phone-header">
-              <div class="phone-header-icon">🏌️</div>
-              <div class="phone-header-title">ゴルフのあいちゃん</div>
-              <div class="phone-header-sub">PGA基準のAI解析</div>
-            </div>
-            <div class="phone-chat">
-              <div class="chat-bubble user">ドライバーの飛距離を伸ばしたい</div>
-              <div class="chat-bubble user">🎥 スイング動画を送信</div>
-              <div class="chat-bubble ai">解析中...あと数秒です⏳</div>
-              <div class="chat-bubble ai">
-                <strong>切り返しのタイミングが早い！</strong><br><br>
-                ここを直すだけで<br>飛距離+15yd見込めます🚀
+            <div class="hero-line-header">
+              <span class="hlh-back">‹</span>
+              <div class="hlh-avatar">⛳</div>
+              <div>
+                <div class="hlh-name">ゴルフのあいちゃん</div>
+                <div class="hlh-sub">AIゴルフコーチ</div>
               </div>
+            </div>
+            <div class="hero-line-chat">
+              <div class="hlc-bot hlc-msg">
+                <div class="hlc-av">⛳</div>
+                <div class="hlc-bbl">
+                  <div class="hlc-sec">💬 総合コメント</div>
+                  アドレスの安定感が素晴らしい！トップでの切り返しを改善すればスコアが大きく変わります。
+                  <div class="hlc-sep"></div>
+                  <div class="hlc-sec">📊 フェーズ別評価</div>
+                  <strong>切り返し：</strong><br>
+                  <span class="hlc-good">→ 良い点：下半身から始動できている</span><br>
+                  <span class="hlc-bad">→ 直した方がいい点：タイミングがやや急</span>
+                  <div class="hlc-sep"></div>
+                  <div class="hlc-sec">🎯 最優先で直す1つ</div>
+                  「切り返しの間」を直そう！
+                  <div class="hlc-sep"></div>
+                  <div class="hlc-sec">🏋️ おすすめ練習</div>
+                  トップで2秒止まってから振り下ろす。7番で50球。
+                </div>
+              </div>
+            </div>
+            <div class="hero-line-rmenu">
+              <div class="hlr-item hlr-active"><span class="hlr-ic">🎯</span><span class="hlr-lb">解析</span></div>
+              <div class="hlr-item"><span class="hlr-ic">📖</span><span class="hlr-lb">使い方</span></div>
+              <div class="hlr-item"><span class="hlr-ic">💬</span><span class="hlr-lb">問い合わせ</span></div>
             </div>
           </div>
         </div>
@@ -631,6 +698,44 @@ footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
         <h3>数秒後、プロの目が届く</h3>
         <p>7フェーズを具体的に診断。良い点・改善点・最優先で直す1つ・おすすめ練習法まで。「次の1球で何を意識するか」が明確になります。</p>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ NEW: Live Demo Section ═══ -->
+<section class="demo-section">
+  <div class="container">
+    <div class="section-label reveal">Live Demo</div>
+    <h2 class="section-title reveal">実際の操作、<br>見てみてください。</h2>
+    <p class="section-desc reveal" style="margin: 0 auto;">「解析」をタップするだけ。LINEの画面そのままで、AIコーチの実力を体験できます。</p>
+
+    <div class="demo-phone reveal">
+      <div class="demo-sbar"><span>9:41</span><span>⚡</span></div>
+      <div class="demo-lhdr">
+        <span class="demo-lhdr-back">‹</span>
+        <div class="demo-lhdr-av">⛳</div>
+        <div><div class="demo-lhdr-nm">ゴルフのあいちゃん</div><div class="demo-lhdr-sub">AIゴルフコーチ</div></div>
+      </div>
+      <div class="demo-chat" id="demoChat">
+        <div class="demo-welcome" id="demoWelcome">
+          <div class="demo-welcome-icon">⛳</div>
+          <div class="demo-welcome-txt">下の「解析」をタップして<br>デモを開始しましょう</div>
+        </div>
+      </div>
+      <div class="demo-ibar">
+        <div class="demo-ibar-inp">メッセージを入力...</div>
+        <div class="demo-ibar-send"><svg viewBox="0 0 16 16" fill="none"><path d="M2 14L14.5 8L2 2V6.5L10 8L2 9.5V14Z" fill="#fff"/></svg></div>
+      </div>
+      <div class="demo-rmenu">
+        <div class="demo-rmenu-item demo-rmenu-active" onclick="startDemo()"><span class="demo-rmenu-ic">🎯</span><span class="demo-rmenu-lb">解析</span></div>
+        <div class="demo-rmenu-item"><span class="demo-rmenu-ic">📖</span><span class="demo-rmenu-lb">使い方</span></div>
+        <div class="demo-rmenu-item"><span class="demo-rmenu-ic">💬</span><span class="demo-rmenu-lb">問い合わせ</span></div>
+      </div>
+    </div>
+
+    <div class="demo-controls">
+      <button class="demo-btn-play demo-pulse" id="demoPlayBtn" onclick="startDemo()">▶ デモ開始</button>
+      <button class="demo-btn-reset" id="demoResetBtn" onclick="resetDemo()" style="display:none">リセット</button>
     </div>
   </div>
 </section>
@@ -671,31 +776,42 @@ footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
   </div>
 </section>
 
-<!-- Analysis Demo -->
+<!-- Analysis Demo (LINE風に差し替え) -->
 <section class="score-section">
   <div class="container">
     <div class="section-label reveal">AI Analysis</div>
     <h2 class="section-title reveal">LINEに届くレポート、<br>ここまで具体的。</h2>
     <p class="section-desc reveal" style="margin: 0 auto;">実際にAIコーチが返すフィードバックの例です。</p>
+
     <div class="score-demo reveal">
-      <div style="font-size: 0.85rem; line-height: 1.9; color: var(--text-primary);">
-        <div style="margin-bottom: 16px;">
-          <strong>💬 総合コメント</strong><br>
-          アドレスの安定感がとても良いですね！ここは自信を持ってください。一番の課題は切り返しのタイミング。上半身主導になっているので、下半身リードを意識するだけで飛距離がグッと伸びます。
-        </div>
-        <div style="border-top: 1px solid var(--border); margin: 16px 0; padding-top: 16px;">
-          <strong>📊 フェーズ別評価（一部抜粋）</strong><br><br>
-          <span style="color: var(--accent);">切り返し：</span><br>
-          → 良い点：トップからの切り返し自体はスムーズで、急激な力みがない<br>
-          → 直した方がいい点：上半身から動き始めている。左足の踏み込みを先に行うことで、タメが生まれ飛距離アップにつながる
-        </div>
-        <div style="border-top: 1px solid var(--border); margin: 16px 0; padding-top: 16px;">
-          <strong>🎯 最優先で直す1つ</strong><br>
-          「切り返しで左足を先に踏み込む」を直そう！ここを変えるだけでヘッドスピードが劇的に上がる。
-        </div>
-        <div style="border-top: 1px solid var(--border); margin: 16px 0; padding-top: 16px;">
-          <strong>🏋️ おすすめ練習</strong><br>
-          ステップドリル：トップで一度左足を浮かせてから踏み込んで打つ。10球×3セット。
+      <div class="score-line-header">
+        <div class="slh-av">⛳</div>
+        <div class="slh-nm">ゴルフのあいちゃん</div>
+      </div>
+      <div class="score-line-chat">
+        <div class="score-bot-row">
+          <div class="sbr-av">⛳</div>
+          <div class="sbr-bbl">
+            <span class="sbr-strong">💬 総合コメント</span>
+            アドレスの安定感がとても良いですね！ここは自信を持ってください。一番の課題は切り返しのタイミング。上半身主導になっているので、下半身リードを意識するだけで飛距離がグッと伸びます。
+
+            <div class="sbr-divider">
+              <span class="sbr-strong">📊 フェーズ別評価（一部抜粋）</span><br><br>
+              <span class="sbr-phase">切り返し：</span><br>
+              <span class="sbr-good">→ 良い点：トップからの切り返し自体はスムーズで、急激な力みがない</span><br>
+              <span class="sbr-bad">→ 直した方がいい点：上半身から動き始めている。左足の踏み込みを先に行うことで、タメが生まれ飛距離アップにつながる</span>
+            </div>
+
+            <div class="sbr-divider">
+              <span class="sbr-strong">🎯 最優先で直す1つ</span><br>
+              「切り返しで左足を先に踏み込む」を直そう！ここを変えるだけでヘッドスピードが劇的に上がる。
+            </div>
+
+            <div class="sbr-divider">
+              <span class="sbr-strong">🏋️ おすすめ練習</span><br>
+              ステップドリル：トップで一度左足を浮かせてから踏み込んで打つ。10球×3セット。
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -707,22 +823,9 @@ footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
   <div class="container" style="text-align: center;">
     <div class="section-label reveal">Pricing</div>
     <h2 class="section-title reveal">レッスン1回分の値段で、<br>1ヶ月ずっとコーチがつく。</h2>
-    <p class="section-desc reveal" style="margin: 0 auto;">まずは無料トライアルで体験。「これは使える」と思ったら、月額プランで続けてください。</p>
+    <p class="section-desc reveal" style="margin: 0 auto;">初回1回は無料で体験できます。</p>
     <div class="pricing-grid" style="display: flex; gap: 24px; justify-content: center; flex-wrap: wrap;">
-      <div class="price-card reveal" style="max-width: 360px; flex: 1;">
-        <div class="price-plan">FREE</div>
-        <div class="price-amount">¥0</div>
-        <p class="price-desc">まずは無料で試してみてください。1回限り、全機能が使えます。</p>
-        <ul class="price-features">
-          <li>1回限りのAI解析</li>
-          <li>全4モード利用可能</li>
-          <li>7フェーズの詳細レポート</li>
-          <li>LINE完結（アプリ不要）</li>
-        </ul>
-        <a href="https://line.me/R/ti/p/@885osksd" class="btn-price">無料で始める</a>
-      </div>
-      <div class="price-card recommended reveal" style="max-width: 360px; flex: 1;">
-        <div class="price-badge">おすすめ</div>
+      <div class="price-card recommended reveal" style="max-width: 400px; flex: 1;">
         <div class="price-plan">PRO</div>
         <div class="price-amount">¥480<small>/月</small></div>
         <p class="price-desc">月10回、好きなタイミングでプロ基準の解析。練習のたびにコーチがいる感覚。</p>
@@ -752,10 +855,7 @@ footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
         <p class="testimonial-text">「練習場で毎回撮って送ってます。切り返しのタイミングを指摘されてから意識したら、1ヶ月でスライスがかなり改善しました。」</p>
         <div class="testimonial-author">
           <div class="testimonial-avatar">T.S</div>
-          <div>
-            <div class="testimonial-name">T.S さん</div>
-            <div class="testimonial-meta">ゴルフ歴3年 · スコア105→95</div>
-          </div>
+          <div><div class="testimonial-name">T.S さん</div><div class="testimonial-meta">ゴルフ歴3年 · スコア105→95</div></div>
         </div>
       </div>
       <div class="testimonial-card reveal">
@@ -763,10 +863,7 @@ footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
         <p class="testimonial-text">「レッスンプロに通う時間がなかったので助かります。AIの指摘が的確で、しかも褒めてくれるのでモチベが上がる（笑）」</p>
         <div class="testimonial-author">
           <div class="testimonial-avatar">M.K</div>
-          <div>
-            <div class="testimonial-name">M.K さん</div>
-            <div class="testimonial-meta">ゴルフ歴5年 · スコア98→88</div>
-          </div>
+          <div><div class="testimonial-name">M.K さん</div><div class="testimonial-meta">ゴルフ歴5年 · スコア98→88</div></div>
         </div>
       </div>
       <div class="testimonial-card reveal">
@@ -774,10 +871,7 @@ footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
         <p class="testimonial-text">「過去の自分との比較が良い。3ヶ月前と今のフォームを比べると確実に良くなっていて、数値で見えるのが嬉しい。」</p>
         <div class="testimonial-author">
           <div class="testimonial-avatar">A.Y</div>
-          <div>
-            <div class="testimonial-name">A.Y さん</div>
-            <div class="testimonial-meta">ゴルフ歴1年 · スコア115→102</div>
-          </div>
+          <div><div class="testimonial-name">A.Y さん</div><div class="testimonial-meta">ゴルフ歴1年 · スコア115→102</div></div>
         </div>
       </div>
     </div>
@@ -789,7 +883,7 @@ footer .logo { margin-bottom: 12px; font-size: 1.2rem; }
   <div class="container">
     <div class="section-label reveal">Get Started</div>
     <h2 class="section-title reveal">あなたのスイング、<br>AIコーチに診てもらいませんか？</h2>
-    <p class="section-desc reveal">友だち追加して動画を送るだけ。毎月1回は無料です。<br>アプリ不要、いつものLINEで、今すぐ始められます。</p>
+    <p class="section-desc reveal">友だち追加して動画を送るだけ。初回1回は無料です。<br>アプリ不要、いつものLINEで、今すぐ始められます。</p>
     <a href="https://line.me/R/ti/p/@885osksd" class="btn-primary reveal" style="font-size: 1.05rem; padding: 18px 44px;">
       <svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px;"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
       無料でAIコーチに診てもらう
@@ -828,6 +922,139 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.15 });
 reveals.forEach(el => observer.observe(el));
 
+// ═══ Live Demo Logic ═══
+const demoChat = document.getElementById('demoChat');
+const demoWelcome = document.getElementById('demoWelcome');
+const demoPlayBtn = document.getElementById('demoPlayBtn');
+const demoResetBtn = document.getElementById('demoResetBtn');
+let demoPlaying = false;
+let demoStep = -1;
+
+const REPORT = '💬 総合コメント\nバランスの取れたスイングです！アドレスの安定感が素晴らしい。切り返しのタイミングを改善すればスコアが大きく変わります。\n━\n📊 フェーズ別評価\n\nアドレス：\n→ 良い点：足幅・肩幅のバランスが良く重心が安定。\n→ 直した方がいい点：グリップがやや強め。力を抜くとヘッドスピードUP。\n\nテイクバック：\n→ 良い点：手と体の同調が良い。\n→ 直した方がいい点：やや内側に引きすぎ。\n\n切り返し：\n→ 良い点：下半身から始動できている。\n→ 直した方がいい点：タイミングがやや急。\n━\n🌟 良い点\n① アドレスの安定感が理想的。\n② 下半身始動の切り返しができている。\n③ フィニッシュのバランスが良い。\n━\n🔧 改善点TOP3\n①【最重要】切り返しの「間」を作る。\n② ハンドファーストの強化。\n③ フォローで左腕を伸ばす。\n━\n🎯 最優先で直す1つ\n「切り返しの間」を直そう！トップで「1」と数えてから振り下ろすだけでインパクトの質が劇的に良くなる。\n━\n🏋️ おすすめ練習\nトップで2秒止まってから振り下ろす。7番アイアンで50球。週3×2週間で効果実感。';
+
+const DEMO_FLOW = [
+  { type:'user', text:'解析メニュー', delay:400 },
+  { type:'carousel', delay:600, label:'モードを選んでください',
+    cards:[
+      { title:'質問', desc:'動画＋質問を送って\n自由にAIコーチに聞く', color:'#9C27B0', style:'dot' },
+      { title:'AI解析', desc:'AIがあなたのスイングを\n詳しく分析します', color:'#4CAF50', style:'dot', hl:true },
+      { title:'プロ比較', desc:'プロのスイングと比較して\n改善点を発見します', color:'#2196F3', style:'dot' },
+      { title:'過去比較', desc:'過去の自分と比較して\n成長を確認します', color:'#FF9800', style:'dot' },
+    ]
+  },
+  { type:'user', text:'AI解析', delay:800 },
+  { type:'carousel', delay:600, label:'メッセージの有無を選んでください',
+    cards:[
+      { title:'テキストなし', desc:'動画だけですぐに\n解析を開始します', color:'#4CAF50', style:'header', hl:true },
+      { title:'テキストを追加', desc:'質問や補足、見てほしい\nポイントを添えて解析', color:'#2196F3', style:'header' },
+    ]
+  },
+  { type:'user', text:'テキストなし', delay:800 },
+  { type:'bot', text:'⛳ 設定完了！\n\n📌 モード：AI解析\n📝 追加テキストなし\n\nスイング動画を送ってください🎥', delay:500 },
+  { type:'video', delay:1200 },
+  { type:'typing', delay:800 },
+  { type:'report', delay:2500 },
+];
+
+function demoScroll() { demoChat.scrollTop = demoChat.scrollHeight; }
+
+function demoAddMsg(html) {
+  const d = document.createElement('div');
+  d.className = 'demo-msg';
+  d.innerHTML = html;
+  demoChat.appendChild(d);
+  requestAnimationFrame(() => { d.classList.add('show'); demoScroll(); });
+  return d;
+}
+
+function demoRemoveTyping() {
+  const t = demoChat.querySelector('.demo-typing-msg');
+  if (t) t.remove();
+}
+
+function demoMakeCarousel(item) {
+  let h = '<div class="demo-carousel-label"><div class="demo-bot-av">⛳</div><div class="demo-carousel-label-txt">' + item.label + '</div></div><div class="demo-carousel">';
+  item.cards.forEach(c => {
+    const hl = c.hl ? ' demo-hl' : '';
+    if (c.style === 'header') {
+      h += '<div class="demo-card' + hl + '" style="--demo-c:' + c.color + '"><div class="demo-card-hdr-bar" style="background:#2C2C2C">' + c.title + '</div><div class="demo-card-desc">' + c.desc + '</div><div class="demo-card-btn-wrap"><div class="demo-card-btn" style="background:' + c.color + '">' + c.title + '</div></div></div>';
+    } else {
+      h += '<div class="demo-card' + hl + '" style="--demo-c:' + c.color + '"><div class="demo-card-hdr-dot"><div class="demo-dot" style="background:' + c.color + '"></div><div class="demo-card-ttl">' + c.title + '</div></div><div class="demo-card-desc">' + c.desc + '</div><div class="demo-card-btn-wrap"><div class="demo-card-btn" style="background:' + c.color + '">' + c.title + '</div></div></div>';
+    }
+  });
+  h += '</div>';
+  return h;
+}
+
+function demoFormatReport(text) {
+  return text.split('\n').map(function(line) {
+    if (line === '━') return '<div class="demo-sep"></div>';
+    if (/^(💬|📊|🌟|🔧|🎯|🏋)/.test(line)) return '<div class="demo-sec">' + line + '</div>';
+    if (line.startsWith('→ 良い点')) return '<div class="demo-gd">' + line + '</div>';
+    if (line.startsWith('→ 直した方')) return '<div class="demo-bd">' + line + '</div>';
+    if (/^(アドレス|テイクバック|トップ|切り返し|インパクト|フォロー|フィニッシュ)：/.test(line)) return '<div class="demo-ph">' + line + '</div>';
+    if (/^[①②③]/.test(line)) return '<div class="demo-num">' + line + '</div>';
+    if (line.startsWith('・')) return '<div class="demo-term">' + line + '</div>';
+    return '<div>' + line + '</div>';
+  }).join('');
+}
+
+function demoRunStep(idx) {
+  const item = DEMO_FLOW[idx];
+  demoStep = idx;
+
+  if (item.type === 'user') {
+    demoAddMsg('<div class="demo-usr"><div class="demo-usr-bbl">' + item.text + '</div></div>');
+  } else if (item.type === 'carousel') {
+    const d = document.createElement('div');
+    d.className = 'demo-msg';
+    d.innerHTML = demoMakeCarousel(item);
+    demoChat.appendChild(d);
+    requestAnimationFrame(function() { d.classList.add('show'); demoScroll(); });
+  } else if (item.type === 'bot') {
+    demoAddMsg('<div class="demo-bot"><div class="demo-bot-av">⛳</div><div class="demo-bot-bbl">' + item.text + '</div></div>');
+  } else if (item.type === 'video') {
+    demoAddMsg('<div class="demo-usr"><div class="demo-vid"><div class="demo-vid-play"></div><div class="demo-vid-dur">0:08</div></div></div>');
+  } else if (item.type === 'typing') {
+    const d = demoAddMsg('<div class="demo-bot"><div class="demo-bot-av">⛳</div><div class="demo-bot-bbl"><div class="demo-typing"><span></span><span></span><span></span></div></div></div>');
+    d.classList.add('demo-typing-msg');
+  } else if (item.type === 'report') {
+    demoRemoveTyping();
+    demoAddMsg('<div class="demo-bot"><div class="demo-bot-av">⛳</div><div class="demo-bot-bbl demo-report" style="font-size:10.5px;line-height:1.6">' + demoFormatReport(REPORT) + '</div></div>');
+  }
+
+  if (idx < DEMO_FLOW.length - 1) {
+    var nextDelay = DEMO_FLOW[idx + 1].delay || 500;
+    setTimeout(function() { if (demoPlaying) demoRunStep(idx + 1); }, nextDelay);
+  } else {
+    demoPlaying = false;
+    demoPlayBtn.disabled = false;
+    demoPlayBtn.textContent = '▶ もう一度';
+    demoPlayBtn.classList.remove('demo-pulse');
+  }
+}
+
+function startDemo() {
+  if (demoPlaying) return;
+  demoChat.innerHTML = '';
+  demoPlaying = true;
+  demoStep = -1;
+  demoPlayBtn.disabled = true;
+  demoPlayBtn.textContent = '再生中...';
+  demoPlayBtn.classList.remove('demo-pulse');
+  demoResetBtn.style.display = '';
+  setTimeout(function() { demoRunStep(0); }, 300);
+}
+
+function resetDemo() {
+  demoPlaying = false;
+  demoStep = -1;
+  demoChat.innerHTML = '<div class="demo-welcome"><div class="demo-welcome-icon">⛳</div><div class="demo-welcome-txt">下の「解析」をタップして<br>デモを開始しましょう</div></div>';
+  demoPlayBtn.disabled = false;
+  demoPlayBtn.textContent = '▶ デモ開始';
+  demoPlayBtn.classList.add('demo-pulse');
+  demoResetBtn.style.display = 'none';
+}
 </script>
 </body>
 </html>
