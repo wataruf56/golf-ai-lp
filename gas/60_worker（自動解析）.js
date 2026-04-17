@@ -383,7 +383,15 @@ function 送信フェーズ実行_(messageId) {
     const used = FS整数取得_(userDoc, "monthlyVideoUsed") || 0;
     const ticket = FS整数取得_(userDoc, "ticketBalance") || 0;
 
-    if (申告プラン === プラン種別_チケット) {
+    if (申告プラン === "クーポン") {
+      const couponRem = FS整数取得_(userDoc, "couponRemaining") || 0;
+      if (couponRem > 0) {
+        ユーザー状態更新_FS_(v.userId, { couponRemaining: couponRem - 1 });
+        Webhookログ出力_("課金", "クーポン消費", { userId: v.userId, before: couponRem, after: couponRem - 1, videoId: v.id });
+      } else {
+        Webhookログ出力_("課金", "クーポン残数不足（想定外）", { userId: v.userId, videoId: v.id });
+      }
+    } else if (申告プラン === プラン種別_チケット) {
       if (ticket > 0) {
         ユーザー状態更新_FS_(v.userId, { ticketBalance: ticket - 1 });
         Webhookログ出力_("課金", "チケット消費", { userId: v.userId, before: ticket, after: ticket - 1, videoId: v.id });

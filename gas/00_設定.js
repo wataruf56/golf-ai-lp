@@ -103,6 +103,11 @@ const プラン種別_チケット = "チケット";
 const Free_月上限 = 1;  // free: 生涯1回（月次リセット対象外）
 const Paid_月上限 = 10; // paid: 月10回
 
+/* クーポン */
+const PROP_クーポンコード = "COUPON_CODE";  // Script Properties キー名
+const クーポン付与回数 = 10;
+const クーポン有効日数 = 30;
+
 const 課金消化状態_未消化 = "未消化"; // pending相当
 const 課金消化状態_消化済み = "消化済み";
 

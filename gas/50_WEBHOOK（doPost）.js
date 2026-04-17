@@ -56,6 +56,11 @@ function doPost(e) {
 
         // レベル
         userLevel: FS文字列取得_(userStateDoc, "userLevel") || ユーザーレベル_未設定,
+
+        // クーポン
+        couponRemaining: FS整数取得_(userStateDoc, "couponRemaining") || 0,
+        couponExpiresAt: FS文字列取得_(userStateDoc, "couponExpiresAt") || "",
+        couponUsed: FS文字列取得_(userStateDoc, "couponUsed") || "",
       };
 
       /* =====================================================
@@ -70,8 +75,6 @@ function doPost(e) {
         // Webhook側では何もせずスキップする
         const 応答メッセージ専用キーワード = [
           "#補足や質問", // メッセージモード選択カードを出すトリガー（応答メッセージ側）
-          "使い方",      // リッチメニュー「使い方」→ 応答メッセージ側で返信
-          "#使い方",
           "#問い合わせ",  // リッチメニュー「問い合わせ」→ 応答メッセージ側で返信
           "問い合わせ",
         ];
@@ -168,28 +171,117 @@ function doPost(e) {
           continue;
         }
 
+        // ════════════════════════════════════════════════
+        // クーポン適用
+        // ════════════════════════════════════════════════
+        if (text.startsWith("#クーポン") || text.startsWith("#COUPON")) {
+          const inputCode = text.replace(/^#(クーポン|COUPON)\s*/i, "").trim().toUpperCase();
+          const validCode = (PropertiesService.getScriptProperties().getProperty(PROP_クーポンコード) || "").toUpperCase();
+
+          if (!inputCode || !validCode || inputCode !== validCode) {
+            if (replyToken) LINE返信送信_(replyToken, "❌ クーポンコードが正しくありません。");
+            continue;
+          }
+          // 既にクーポン使用済み
+          if (状態.couponUsed) {
+            if (replyToken) LINE返信送信_(replyToken, "このクーポンは既に使用済みです。\nクーポンは1回のみご利用いただけます。");
+            continue;
+          }
+          // 無料トライアル済みは使用不可
+          if (状態.monthlyVideoUsed > 0 || 状態.planType === プラン種別_paid) {
+            if (replyToken) LINE返信送信_(replyToken, "このクーポンは、まだ解析を利用したことがないユーザー限定です。");
+            continue;
+          }
+
+          // クーポン適用：枠付与 + 有効期限設定
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + クーポン有効日数);
+          ユーザー状態更新_FS_(userId, {
+            couponRemaining: クーポン付与回数,
+            couponExpiresAt: expiresAt.toISOString(),
+            couponUsed: validCode,
+          });
+
+          if (replyToken) LINE返信送信_(replyToken,
+            "🎉 クーポンが適用されました！\n\n"
+            + "🎫 解析 " + クーポン付与回数 + "回分をプレゼント！\n"
+            + "📅 有効期限：" + (expiresAt.getMonth() + 1) + "月" + expiresAt.getDate() + "日まで\n\n"
+            + "さっそく動画を送って解析してみましょう！"
+          );
+          Webhookログ出力_("クーポン", "適用成功", { userId, code: inputCode, expires: expiresAt.toISOString() });
+          continue;
+        }
+
         // ヘルプ・使い方コマンド
         if (text === "#HELP" || text === "#ヘルプ" || text === "#へるぷ" || text === "#使い方" || text === "使い方") {
           const plan = 状態.planType || プラン種別_free;
-          const planInfo = plan === プラン種別_paid
-            ? "🌟 有料プラン加入中"
-            : "🆓 無料トライアル（1回限り）";
-          if (replyToken) LINE返信送信_(replyToken,
-            "📖 使い方ガイド\n\n"
-            + "【動画解析】\n"
-            + "ゴルフスイング動画を送るだけ！\nAIが詳しく分析します。\n\n"
-            + "【操作の流れ】\n"
-            + "1. メニューの「解析」をタップ\n"
-            + "2. 解析モードを選択\n"
-            + "3. メッセージモードを選択\n"
-            + "4. 動画を送信 → AI解析スタート！\n\n"
-            + "💡 操作を最初からやり直したい場合は、\nメニューの「解析」をタップすれば\nいつでもリセットされます。\n\n"
-            + "【コマンド一覧】\n"
-            + "#ヘルプ → この案内を表示\n"
-            + "#ステータス → プラン・残り回数確認\n"
-            + "#プラン → プラン申込・確認\n\n"
-            + `現在のプラン：${planInfo}`
-          );
+          const isPaid = (plan === プラン種別_paid);
+
+          // 残り回数の算出（通常枠 + クーポン枠）
+          const limit = isPaid
+            ? ((状態.monthlyVideoLimit && 状態.monthlyVideoLimit > 0) ? 状態.monthlyVideoLimit : Paid_月上限)
+            : Free_月上限;
+          const used = 状態.monthlyVideoUsed || 0;
+          let remaining = Math.max(0, limit - used);
+
+          // クーポン枠が有効なら加算
+          if (状態.couponRemaining > 0 && 状態.couponExpiresAt) {
+            const couponExpiry = new Date(状態.couponExpiresAt);
+            if (couponExpiry > new Date()) {
+              remaining += 状態.couponRemaining;
+            }
+          }
+
+          if (replyToken) {
+            var helpMessages = [
+              // 1. 動画：使い方デモアニメーション
+              {
+                type: "video",
+                originalContentUrl: "https://golf.shikumi-ya.com/demo_usage.mp4",
+                previewImageUrl: "https://golf.shikumi-ya.com/demo_preview.png"
+              },
+              // 2. テキスト：使い方ガイド + 残り回数
+              {
+                type: "text",
+                text: "📖 使い方ガイド\n\n"
+                  + "【動画解析】\n"
+                  + "ゴルフスイング動画を送るだけ！\nAIが詳しく分析します。\n\n"
+                  + "【操作の流れ】\n"
+                  + "1. メニューの「解析」をタップ\n"
+                  + "2. 解析モードを選択\n"
+                  + "3. メッセージモードを選択\n"
+                  + "4. 動画を送信 → AI解析スタート！\n\n"
+                  + "💡 操作を最初からやり直したい場合は、\nメニューの「解析」をタップすれば\nいつでもリセットされます。\n\n"
+                  + "📊 残り解析回数：" + remaining + "回"
+              }
+            ];
+
+            // 未契約ユーザーのみ：契約動線カードを追加
+            if (!isPaid) {
+              helpMessages.push({
+                type: "flex",
+                altText: "有料プランのご案内",
+                contents: {
+                  type: "bubble", size: "kilo",
+                  body: {
+                    type: "box", layout: "vertical", paddingAll: "15px",
+                    contents: [
+                      { type: "text", text: "⛳ 有料プラン", weight: "bold", size: "md", color: "#333333" },
+                      { type: "text", text: "月額480円で月10回まで\nAI解析が使い放題！", size: "sm", wrap: true, color: "#666666", margin: "md" }
+                    ]
+                  },
+                  footer: {
+                    type: "box", layout: "vertical", paddingAll: "10px",
+                    contents: [
+                      { type: "button", action: { type: "message", label: "契約はこちら", text: "#プラン" }, style: "primary", color: "#4CAF50" }
+                    ]
+                  }
+                }
+              });
+            }
+
+            LINE返信メッセージ送信_(replyToken, helpMessages);
+          }
           continue;
         }
 
@@ -197,21 +289,29 @@ function doPost(e) {
         // 解析メニュー（Step1 アクションモード選択カード）
         // ════════════════════════════════════════════════
         if (text === "#解析メニュー" || text === "解析メニュー") {
-          // 状態リセット＋アクションモード選択カード送信
-          ユーザー状態更新_FS_(userId, {
-            pendingStep: ステップ_なし,
-            actionMode: "",
-            messageMode: "",
-            userMessage: "",
-            proVideoMessageId: "",
-            prevVideoMessageId: "",
-            targetMessageIdForText: "",
-            state: ユーザー状態_待機,
-          });
-          if (replyToken) {
-            LINE返信メッセージ送信_(replyToken, [アクションモード選択カード生成_()]);
+          Webhookログ出力_("doPost", "★解析メニュー処理開始", { replyToken: !!replyToken, userId });
+          try {
+            // 状態リセット＋アクションモード選択カード送信
+            ユーザー状態更新_FS_(userId, {
+              pendingStep: ステップ_なし,
+              actionMode: "",
+              messageMode: "",
+              userMessage: "",
+              proVideoMessageId: "",
+              prevVideoMessageId: "",
+              targetMessageIdForText: "",
+              state: ユーザー状態_待機,
+            });
+            Webhookログ出力_("doPost", "★解析メニュー：状態リセット完了", {});
+            if (replyToken) {
+              var card = アクションモード選択カード生成_();
+              Webhookログ出力_("doPost", "★解析メニュー：カード生成完了", {});
+              LINE返信メッセージ送信_(replyToken, [card]);
+            }
+            Webhookログ出力_("doPost", "★解析メニュー：処理完了", {});
+          } catch (e) {
+            Webhookログ出力_("doPost", "★解析メニュー：例外発生", { err: String(e), stack: String(e.stack || "") });
           }
-          Webhookログ出力_("doPost", "解析メニュー→状態リセット＋カード送信", {});
           continue;
         }
 
@@ -446,10 +546,19 @@ function doPost(e) {
         ? 状態.monthlyVideoLimit
         : 月上限_プランから決定_(planType); // フェイルセーフ
 
+      // クーポン枠の判定（有効期限内 かつ 残数あり）
+      let クーポン有効 = false;
+      if (状態.couponRemaining > 0 && 状態.couponExpiresAt) {
+        const expiry = new Date(状態.couponExpiresAt);
+        if (expiry > new Date()) {
+          クーポン有効 = true;
+        }
+      }
+
       const 月上限超過 = 状態.monthlyVideoUsed >= 月上限;
       const チケットあり = 状態.ticketBalance > 0;
 
-      if (月上限超過 && !チケットあり) {
+      if (月上限超過 && !チケットあり && !クーポン有効) {
         let limitMsg = "今月の解析回数の上限に達しました。";
         if (月上限 === Paid_月上限) {
           limitMsg = "今月の解析回数（10本）を使い切りました。";
@@ -458,11 +567,19 @@ function doPost(e) {
         }
 
         LINEプッシュ送信実行_(userId, limitMsg);
-        Webhookログ出力_("課金", "上限超過で拒否", { userId, planType, used: 状態.monthlyVideoUsed, limit: 月上限, ticket: 状態.ticketBalance });
+        Webhookログ出力_("課金", "上限超過で拒否", { userId, planType, used: 状態.monthlyVideoUsed, limit: 月上限, ticket: 状態.ticketBalance, coupon: クーポン有効 });
         continue;
       }
 
-      const billingPlanSnapshot = 月上限超過 ? プラン種別_チケット : planType;
+      // 消化元の決定：クーポン > チケット > 通常プラン
+      let billingPlanSnapshot;
+      if (月上限超過 && クーポン有効) {
+        billingPlanSnapshot = "クーポン";
+      } else if (月上限超過) {
+        billingPlanSnapshot = プラン種別_チケット;
+      } else {
+        billingPlanSnapshot = planType;
+      }
 
       const res = LINE動画コンテンツ取得_(messageId);
       Webhookログ出力_("doPost:動画", "LINE動画取得", { code: res?.code, hasBlob: !!res?.blob });
@@ -727,7 +844,14 @@ function 動画解析_残り回数チェック_(状態) {
   const 月上限超過 = 状態.monthlyVideoUsed >= 月上限;
   const チケットあり = 状態.ticketBalance > 0;
 
-  if (月上限超過 && !チケットあり) {
+  // クーポン枠チェック
+  let クーポン有効 = false;
+  if ((状態.couponRemaining || 0) > 0 && 状態.couponExpiresAt) {
+    const expiry = new Date(状態.couponExpiresAt);
+    if (expiry > new Date()) クーポン有効 = true;
+  }
+
+  if (月上限超過 && !チケットあり && !クーポン有効) {
     let message;
     if (月上限 === Paid_月上限) {
       message = "今月の解析回数（10本）を使い切りました。\n\n来月1日にリセットされます。";
@@ -819,29 +943,30 @@ function 動画長エラーメッセージ生成_(pendingStep) {
 
 function アクションモード選択カード生成_() {
   var items = [
-    { title: "質問", desc: "動画＋質問を送って\n自由にAIコーチに聞く", color: "#9C27B0", icon: "https://cdn-icons-png.flaticon.com/128/1828/1828884.png", img: "https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=400", cmd: "#AI_質問" },
-    { title: "AI解析", desc: "AIがあなたのスイングを\n詳しく分析します", color: "#4CAF50", icon: "https://cdn-icons-png.flaticon.com/128/4712/4712109.png", img: "https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=400", cmd: "#AI_解析" },
-    { title: "プロ比較", desc: "プロのスイングと比較して\n改善点を発見します", color: "#2196F3", icon: "https://cdn-icons-png.flaticon.com/128/3135/3135810.png", img: "https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=400", cmd: "#AI_プロ比較" },
-    { title: "過去比較", desc: "過去の自分と比較して\n成長を確認します", color: "#FF9800", icon: "https://cdn-icons-png.flaticon.com/128/2088/2088617.png", img: "https://images.unsplash.com/photo-1592919505780-303950717480?w=400", cmd: "#AI_過去比較" }
+    { title: "💬 質問", desc: "動画＋質問を送って\n自由にAIコーチに聞く", color: "#9C27B0", cmd: "#AI_質問" },
+    { title: "⛳ AI解析", desc: "AIがあなたのスイングを\n詳しく分析します", color: "#4CAF50", cmd: "#AI_解析" },
+    { title: "🏆 プロ比較", desc: "プロのスイングと比較して\n改善点を発見します", color: "#2196F3", cmd: "#AI_プロ比較" },
+    { title: "📈 過去比較", desc: "過去の自分と比較して\n成長を確認します", color: "#FF9800", cmd: "#AI_過去比較" }
   ];
   var bubbles = items.map(function(it) {
     return {
       type: "bubble", size: "kilo",
-      hero: { type: "image", url: it.img, size: "full", aspectRatio: "16:9", aspectMode: "cover" },
-      body: {
-        type: "box", layout: "vertical",
+      header: {
+        type: "box", layout: "vertical", paddingAll: "15px",
+        backgroundColor: it.color,
         contents: [
-          { type: "box", layout: "horizontal", contents: [
-            { type: "image", url: it.icon, size: "xxs", aspectMode: "fit", flex: 0 },
-            { type: "text", text: it.title, weight: "bold", size: "lg", margin: "md", color: "#333333" }
-          ]},
-          { type: "text", text: it.desc, size: "sm", wrap: true, color: "#888888", margin: "md" }
+          { type: "text", text: it.title, weight: "bold", size: "lg", color: "#FFFFFF", align: "center" }
+        ]
+      },
+      body: {
+        type: "box", layout: "vertical", paddingAll: "15px",
+        contents: [
+          { type: "text", text: it.desc, size: "sm", wrap: true, color: "#555555", align: "center" }
         ]
       },
       footer: {
-        type: "box", layout: "vertical",
-        contents: [{ type: "button", action: { type: "message", label: it.title, text: it.cmd }, style: "primary", color: it.color }],
-        paddingAll: "8px"
+        type: "box", layout: "vertical", paddingAll: "8px",
+        contents: [{ type: "button", action: { type: "message", label: "選択する", text: it.cmd }, style: "primary", color: it.color }]
       }
     };
   });

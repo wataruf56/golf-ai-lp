@@ -22,7 +22,7 @@ function リッチメニュー登録_3カラム() {
   const menuBody = {
     size: { width: 2500, height: 843 },
     selected: true,
-    name: "メインメニュー v3",
+    name: "メインメニュー v4",
     chatBarText: "メニュー",
     areas: [
       {
@@ -35,7 +35,7 @@ function リッチメニュー登録_3カラム() {
       },
       {
         bounds: { x: 1707, y: 0, width: 793, height: 843 },
-        action: { type: "message", text: "#問い合わせ" }
+        action: { type: "uri", uri: "https://lin.ee/5MkA79c" }
       }
     ]
   };
@@ -75,6 +75,51 @@ function リッチメニュー登録_3カラム() {
   );
   Logger.log("SetDefault: " + defaultRes.getContentText());
   Logger.log("✅ リッチメニュー登録完了！ richMenuId: " + richMenuId);
+}
+
+/**
+ * API経由で作成されたリッチメニューをすべて削除する
+ * LINE管理画面でリッチメニューを作り直す前に実行すること
+ */
+function リッチメニュー全削除_API() {
+  const TOKEN = PropertiesService.getScriptProperties().getProperty("LINE_CHANNEL_ACCESS_TOKEN");
+
+  // 1. 既存のリッチメニュー一覧を取得
+  const listRes = UrlFetchApp.fetch("https://api.line.me/v2/bot/richmenu/list", {
+    method: "get",
+    headers: { "Authorization": "Bearer " + TOKEN },
+    muteHttpExceptions: true
+  });
+  Logger.log("一覧取得: " + listRes.getContentText().slice(0, 500));
+
+  const menus = JSON.parse(listRes.getContentText()).richmenus || [];
+  Logger.log("リッチメニュー数: " + menus.length);
+
+  if (menus.length === 0) {
+    Logger.log("削除対象なし");
+    return;
+  }
+
+  // 2. デフォルト設定を解除
+  const cancelRes = UrlFetchApp.fetch("https://api.line.me/v2/bot/user/all/richmenu", {
+    method: "delete",
+    headers: { "Authorization": "Bearer " + TOKEN },
+    muteHttpExceptions: true
+  });
+  Logger.log("デフォルト解除: " + cancelRes.getResponseCode());
+
+  // 3. 各リッチメニューを削除
+  for (var i = 0; i < menus.length; i++) {
+    var id = menus[i].richMenuId;
+    var delRes = UrlFetchApp.fetch("https://api.line.me/v2/bot/richmenu/" + id, {
+      method: "delete",
+      headers: { "Authorization": "Bearer " + TOKEN },
+      muteHttpExceptions: true
+    });
+    Logger.log("削除 " + id + ": " + delRes.getResponseCode());
+  }
+
+  Logger.log("✅ 全リッチメニュー削除完了。LINE管理画面から新しく作成してください。");
 }
 
 function TEST_runQuery_動画キュー取得() {

@@ -68,7 +68,11 @@ function LINE返信メッセージ送信_(replyToken, messages) {
   };
 
   const res = LINE_API_POST_(url, payload);
-  Webhookログ出力_("LINE返信(メッセージ)", "送信", { code: res.code });
+  if (res.code !== 200) {
+    Webhookログ出力_("LINE返信(メッセージ)", "失敗", { code: res.code, body: String(res.text).slice(0, 300) });
+  } else {
+    Webhookログ出力_("LINE返信(メッセージ)", "送信OK", { code: res.code });
+  }
 }
 
 function LINEプッシュ送信実行_(userId, text) {
