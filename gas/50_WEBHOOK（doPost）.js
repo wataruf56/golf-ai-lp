@@ -439,6 +439,17 @@ function doPost(e) {
           }
         }
 
+        // ── pendingStep中でも # コマンドは通常処理に戻す ──
+        if (状態.pendingStep && 状態.pendingStep !== ステップ_なし && text.startsWith("#")) {
+          ユーザー状態更新_FS_(userId, { pendingStep: ステップ_なし });
+          Webhookログ出力_("doPost", "pendingStep中に#コマンド検出→リセット", { pendingStep: 状態.pendingStep, text });
+          // リセット後、doPostの先頭から再処理はできないので、
+          // ここでは continue せずそのまま自由質問へ落とさず、次のイベントで処理される
+          // → ユーザーには「操作をリセットしました」と通知
+          if (replyToken) LINE返信送信_(replyToken, "💡 操作をリセットしました。もう一度送り直してください。");
+          continue;
+        }
+
         // ── 質問モード：プロンプト入力 → userMessage保存 → 動画待ちへ ──
         if (状態.pendingStep === ステップ_質問プロンプト入力待ち) {
           ユーザー状態更新_FS_(userId, {
