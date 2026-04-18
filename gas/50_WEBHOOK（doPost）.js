@@ -175,9 +175,9 @@ function doPost(e) {
             if (replyToken) LINE返信送信_(replyToken, "このクーポンは既に使用済みです。\nクーポンは1回のみご利用いただけます。");
             continue;
           }
-          // 無料トライアル済みは使用不可
-          if (状態.monthlyVideoUsed > 0 || 状態.planType === プラン種別_paid) {
-            if (replyToken) LINE返信送信_(replyToken, "このクーポンは、まだ解析を利用したことがないユーザー限定です。");
+          // 有料プランユーザーは使用不可
+          if (状態.planType === プラン種別_paid) {
+            if (replyToken) LINE返信送信_(replyToken, "有料プランをご利用中のため、クーポンは適用できません。");
             continue;
           }
 
