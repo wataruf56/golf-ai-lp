@@ -321,7 +321,68 @@ function doPost(e) {
         if (text === "#解析メニュー" || text === "解析メニュー") {
           Webhookログ出力_("doPost", "★解析メニュー処理開始", { replyToken: !!replyToken, userId });
           try {
-            // 状態リセット＋アクションモード選択カード送信
+            // ── 残り回数チェック（枠切れなら即プラン案内。クーポン枠があれば通常フロー） ──
+            const 残りチェック = 動画解析_残り回数チェック_(状態);
+            if (!残りチェック.ok) {
+              const isPaid = 状態.planType === プラン種別_paid;
+              if (isPaid) {
+                // 有料ユーザー枠切れ → 来月リセット案内
+                if (replyToken) LINE返信送信_(replyToken,
+                  "今月の解析回数（10回）を使い切りました。\n\n来月1日にリセットされます。"
+                );
+                Webhookログ出力_("doPost", "★解析メニュー：有料枠切れ→来月案内", { userId });
+              } else {
+                // 無料ユーザー枠切れ → テキスト＋有料プラン案内Flexカード
+                let checkoutUrl = "";
+                try {
+                  checkoutUrl = Stripe_Checkout_URL作成_(userId);
+                } catch (stripeErr) {
+                  Webhookログ出力_("doPost", "★解析メニュー：Stripe URL作成失敗", { err: String(stripeErr) });
+                }
+
+                const 案内テキスト = {
+                  type: "text",
+                  text: "解析枠を使い切りました。\n有料プランに切り替えると月10回まで解析できます！"
+                };
+
+                const プラン案内カード = {
+                  type: "flex",
+                  altText: "有料プランのご案内",
+                  contents: {
+                    type: "bubble", size: "kilo",
+                    header: {
+                      type: "box", layout: "vertical", paddingAll: "15px",
+                      backgroundColor: "#4CAF50",
+                      contents: [
+                        { type: "text", text: "⛳ 有料プラン", weight: "bold", size: "lg", color: "#FFFFFF", align: "center" }
+                      ]
+                    },
+                    body: {
+                      type: "box", layout: "vertical", paddingAll: "15px",
+                      contents: [
+                        { type: "text", text: "月額480円で月10回まで\nAI解析が使い放題！", size: "sm", wrap: true, color: "#555555", align: "center" }
+                      ]
+                    },
+                    footer: {
+                      type: "box", layout: "vertical", paddingAll: "10px",
+                      contents: [
+                        checkoutUrl
+                          ? { type: "button", action: { type: "uri", label: "プランに申し込む", uri: checkoutUrl }, style: "primary", color: "#4CAF50" }
+                          : { type: "button", action: { type: "message", label: "プランに申し込む", text: "#プラン" }, style: "primary", color: "#4CAF50" }
+                      ]
+                    }
+                  }
+                };
+
+                if (replyToken) {
+                  LINE返信メッセージ送信_(replyToken, [案内テキスト, プラン案内カード]);
+                }
+                Webhookログ出力_("doPost", "★解析メニュー：無料枠切れ→プラン案内Flex送信", { userId, hasCheckoutUrl: !!checkoutUrl });
+              }
+              continue;
+            }
+
+            // ── 枠あり：状態リセット＋アクションモード選択カード送信（従来動作） ──
             ユーザー状態更新_FS_(userId, {
               pendingStep: ステップ_なし,
               actionMode: "",
