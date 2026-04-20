@@ -129,7 +129,7 @@ const Stripeイベント_サブスク削除 = "customer.subscription.deleted";
 const Stripeイベント_支払い失敗 = "invoice.payment_failed";
 
 /* ログ（ステージング用スプレッドシート：Step5で自動作成後、IDをここに設定） */
-const WEBHOOKログ_スプレッドシートID = "";
+const WEBHOOKログ_スプレッドシートID = "1zTIktA5N2HzH5dsijEQz7cLli8ebvFU52JqlImpRlpY";
 const WEBHOOKログ_シート名 = "WEBHOOK_LOG";
 /** 【テスト用】AIプロンプトログ：AIに送っているプロンプトだけを記録。主キーで解析結果ログとマッチ。 */
 const AIプロンプトログ_シート名 = "AI_PROMPT_LOG";
