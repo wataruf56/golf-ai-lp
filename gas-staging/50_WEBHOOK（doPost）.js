@@ -779,6 +779,10 @@ function doPost(e) {
         videoFields.analysisType = { stringValue: 解析種別_比較 };
         videoFields.actionModeSnapshot = { stringValue: 動作モード_過去比較 };
         videoFields.prevGcsUri = { stringValue: prevGcs };
+      } else if (状態.actionMode === 動作モード_質問) {
+        // 質問モード：必ず actionModeSnapshot=質問 として保存（worker 側で専用プロンプトに分岐するため）
+        videoFields.analysisType = { stringValue: 解析種別_即解析 };
+        videoFields.actionModeSnapshot = { stringValue: 動作モード_質問 };
       } else {
         videoFields.analysisType = { stringValue: 解析種別_即解析 };
         videoFields.actionModeSnapshot = { stringValue: 動作モード_自分解析 };

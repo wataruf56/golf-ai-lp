@@ -339,13 +339,24 @@ function 送信フェーズ実行_(messageId) {
   const 現在の課金状態 = FS文字列取得_(doc, "billingStatus") || 課金消化状態_未消化;
   const 申告プラン = FS文字列取得_(doc, "billingPlanSnapshot") || プラン種別_free;
 
-  // テストモード時はユーザーにはテスト用メッセージだけ返す（内部処理は通常どおり）
-  const sendText = テストモード有効か_()
-    ? LINE送信用整形_(テストモード_返信文)
-    : LINE送信用整形_(text);
+  // ====================================================================
+  // 【改修】返信を区切り線単位で分割して複数メッセージに。
+  // 質問モードは分割せず1通で送る（自由回答形式のため区切り線が無い）。
+  // ====================================================================
+  const モード = v.actionModeSnapshot || "";
+  const 質問モードか = (モード === 動作モード_質問);
 
-  // 送信（sentAt付与）
-  LINEプッシュ送信実行_(v.userId, sendText);
+  if (テストモード有効か_()) {
+    // テストモード：テスト用メッセージ1通のみ
+    LINEプッシュ送信実行_(v.userId, LINE送信用整形_(テストモード_返信文));
+  } else if (質問モードか) {
+    // 質問モード：分割しない
+    LINEプッシュ送信実行_(v.userId, LINE送信用整形_(text));
+  } else {
+    // 通常モード：区切り線で分割して連続push
+    const parts = レビュー分割_(text);
+    LINEプッシュ複数送信実行_(v.userId, parts.map(LINE送信用整形_));
+  }
   const nowIso = new Date().toISOString();
 
   動画更新_FS_(v.id, {
@@ -480,6 +491,30 @@ function LINE送信用整形_(txt) {
   let out = String(txt || "").replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
   if (out.length > 4800) out = out.slice(0, 4800) + "\n…（長いので続きは短く聞いてね）";
   return out;
+}
+
+/**
+ * AI返信テキストを「━━━━━━━━━━━━━━」の区切り線で分割して配列を返す。
+ * 分割後、空要素や極端に短い断片（10文字未満）は除外する。
+ * 区切り線が見つからない場合（=質問モード等）は1要素の配列をそのまま返す。
+ * @param {string} text
+ * @returns {string[]}
+ */
+function レビュー分割_(text) {
+  const raw = String(text || "").replace(/\r\n/g, "\n").trim();
+  if (!raw) return [];
+
+  // 区切り線（「━」連続3文字以上、前後に空白・改行を許容）
+  const splitRe = /\n*━{3,}\n*/g;
+  const parts = raw.split(splitRe)
+    .map(s => s.trim())
+    .filter(s => s.length >= 10);
+
+  // 区切り線が無かった/分割で空になった場合は原文を1要素で返す
+  if (parts.length === 0) return [raw];
+  if (parts.length === 1) return parts;
+
+  return parts;
 }
 
 function 安全に動画取得_(messageId) {

@@ -89,6 +89,38 @@ function LINEプッシュ送信実行_(userId, text) {
   Webhookログ出力_("LINEプッシュ", "送信", { code: res.code });
 }
 
+/**
+ * 複数のテキストを連続してpushする（LINEに複数メッセージとして届く）
+ * LINEの push は1回のAPIコールで最大5メッセージまで。6通以上は自動で分割送信する。
+ * @param {string} userId
+ * @param {string[]} texts - テキスト配列（空要素は除外される）
+ */
+function LINEプッシュ複数送信実行_(userId, texts) {
+  if (!userId) return;
+  const filtered = (texts || []).map(s => String(s || "").trim()).filter(s => s.length > 0);
+  if (!filtered.length) return;
+
+  const url = LINE_API_BASE_URL + "/message/push";
+  // 5通ずつのチャンクに分ける（LINE API の messages 配列上限）
+  const CHUNK = 5;
+  for (let i = 0; i < filtered.length; i += CHUNK) {
+    const chunk = filtered.slice(i, i + CHUNK);
+    const payload = {
+      to: String(userId),
+      messages: chunk.map(t => ({ type: "text", text: t })),
+    };
+    const res = LINE_API_POST_(url, payload);
+    Webhookログ出力_("LINEプッシュ複数", "送信", {
+      code: res.code,
+      count: chunk.length,
+      chunkIndex: Math.floor(i / CHUNK),
+    });
+    if (res.code !== 200) {
+      Webhookログ出力_("LINEプッシュ複数", "失敗", { code: res.code, body: String(res.text).slice(0, 300) });
+    }
+  }
+}
+
 function LINE動画コンテンツ取得_(messageId) {
   if (!messageId) return { code: 400, blob: null };
 
