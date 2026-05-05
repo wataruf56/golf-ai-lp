@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /gas/
+Disallow: /gas-staging/
+Disallow: /cloudrun/
+Disallow: /logo/
+Disallow: /LINE*
+Disallow: /shikumiya-site/
+
+Sitemap: https://golf.shikumi-ya.com/sitemap.xml
