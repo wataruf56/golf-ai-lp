@@ -21,8 +21,11 @@ import tempfile
 import logging
 
 import numpy as np
+import mediapipe as mp
 from flask import Flask, request, jsonify
 from google.cloud import storage
+
+mp_pose = mp.solutions.pose
 
 from pose_utils import (
     extract_pose_from_video,
@@ -98,6 +101,56 @@ def _load_ideal_pose(phase_key: str):
 @app.get("/")
 def health():
     return ("ok", 200)
+
+
+@app.post("/extract_pose")
+def extract_pose():
+    """
+    画像URL（http/httpsまたはgs://）から MediaPipe Pose で 33 ランドマーク抽出して返す。
+    理想ポーズJSONを作るためのユーティリティエンドポイント。
+    body: { "imageUrl": "https://..." or "gs://..." }
+    return: { "ok": true, "landmarks": [[x,y,vis],...33], "source": <url> }
+    """
+    secret = request.headers.get("x-shared-secret", "")
+    if SHARED_SECRET and secret != SHARED_SECRET:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    body = request.get_json(silent=True) or {}
+    image_url = body.get("imageUrl")
+    if not image_url:
+        return jsonify({"ok": False, "error": "imageUrl required"}), 400
+
+    import cv2
+    import urllib.request
+
+    try:
+        if image_url.startswith("gs://"):
+            tmp_path = "/tmp/extract_in.png"
+            _download_blob(image_url, tmp_path)
+            img = cv2.imread(tmp_path)
+        else:
+            req = urllib.request.Request(image_url, headers={"User-Agent": "pose-renderer/1.0"})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                data = r.read()
+            arr = np.frombuffer(data, dtype=np.uint8)
+            img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+        if img is None:
+            return jsonify({"ok": False, "error": "decode failed"}), 400
+
+        with mp_pose.Pose(static_image_mode=True, model_complexity=2) as pose:
+            res = pose.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+        if not res.pose_landmarks:
+            return jsonify({"ok": False, "error": "no pose detected"}), 200
+        landmarks = [[float(lm.x), float(lm.y), float(lm.visibility)] for lm in res.pose_landmarks.landmark]
+        return jsonify({
+            "ok": True,
+            "landmarks": landmarks,
+            "source": image_url,
+            "imageWidth": int(img.shape[1]),
+            "imageHeight": int(img.shape[0]),
+        })
+    except Exception as e:
+        log.exception("extract_pose failed")
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 @app.post("/render")

@@ -21,7 +21,10 @@ function テキスト回答サービス共有シークレット取得_() {
 function ポーズ描画サービス共有シークレット取得_() {
   const props = PropertiesService.getScriptProperties();
   const secret = props.getProperty(PROP_ポーズ描画サービス共有シークレット) || "";
-  return String(secret);
+  // 【ステージング限定】Script Properties が未設定の場合のフォールバック値
+  // pose-renderer Cloud Run の SHARED_SECRET 環境変数と一致させる。
+  if (secret) return String(secret);
+  return "pose_render_1778063588_85e3b8568f8f89b2";
 }
 
 /**
